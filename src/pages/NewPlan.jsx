@@ -96,6 +96,7 @@ const TEMPLATES = [
 ]
 
 const DEADLINES = [
+  { value: 1 / 60, label: '1 minute (demo)' },
   { value: 1, label: '1 hour' },
   { value: 6, label: '6 hours' },
   { value: 24, label: '24 hours (recommended)' },
