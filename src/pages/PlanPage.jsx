@@ -13,7 +13,7 @@ import Avatar from '../components/Avatar'
 import Logo from '../components/Logo'
 import ViralFooter from '../components/ViralFooter'
 import HandNote from '../components/HandNote'
-import StatusCard from '../components/StatusCard'
+import SectionCard from '../components/SectionCard'
 import TicketCard from '../components/TicketCard'
 import Expenses from '../components/Expenses'
 import { TicketSkeleton } from '../components/Skeleton'
@@ -119,15 +119,38 @@ export default function PlanPage() {
     load()
   }, [load])
 
-  // Auto-decide when deadline passes — first client to open the plan wins the DB lock.
+  // Auto-decide once the deadline passes. Also recovers a plan left stuck in
+  // "deciding" (e.g. the client that claimed it navigated away), so the page can
+  // never hang forever on the "writing the itinerary…" skeleton.
   useEffect(() => {
-    if (!state.plan || state.plan.status !== 'voting' || autoDeciding) return
+    if (!state.plan || autoDeciding) return
     if (!state.plan.deadline) return
     if (new Date(state.plan.deadline) > new Date()) return
+    if (state.plan.status !== 'voting' && state.plan.status !== 'deciding') return
     setAutoDeciding(true)
     autoDecide()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.plan, autoDeciding])
+
+  // Winners + AI payload. Zero place options must NOT block — we fall back to the
+  // host's from-city or a "To be decided" placeholder.
+  function buildDecisionPayload(planRow) {
+    const dateOptions = optionsOfKind(state.options, 'date')
+    const placeOptions = optionsOfKind(state.options, 'place')
+    const winningDate = bestDate(dateOptions, votes)
+    const winningPlace = placeOptions.length ? bestPlace(placeOptions, votes) : null
+    const winningBudget = bestBudget(participants.map((p) => p.budget_vote)) || 3000
+    const payload = {
+      place: winningPlace?.label || planRow.from_city || 'To be decided',
+      date: winningDate?.value || new Date().toISOString().slice(0, 10),
+      days: planRow.days || 1,
+      budget_per_person_inr: winningBudget,
+      people: Math.max(1, participants.length),
+      type: planRow.type,
+      comments: participants.map((p) => p.comment).filter(Boolean),
+    }
+    return { payload, winningDate, winningPlace, winningBudget }
+  }
 
   async function autoDecide() {
     const planRow = state.plan
@@ -135,63 +158,79 @@ export default function PlanPage() {
       setAutoDeciding(false)
       return
     }
-    try {
-      const dateOptions = optionsOfKind(state.options, 'date')
-      const placeOptions = optionsOfKind(state.options, 'place')
-      const winningDate = bestDate(dateOptions, votes)
-      const winningPlace = bestPlace(placeOptions, votes)
-      const winningBudget = bestBudget(participants.map((p) => p.budget_vote)) || 3000
 
-      const { data: updated, error: updateError } = await supabase
-        .from('plans')
-        .update({ status: 'deciding' })
-        .eq('id', planRow.id)
-        .eq('status', 'voting')
-        .select('id')
-        .maybeSingle()
+    const { payload, winningDate, winningPlace, winningBudget } = buildDecisionPayload(planRow)
 
-      if (updateError || !updated) {
-        return
-      }
-
-      const payload = {
-        place: winningPlace?.label || planRow.from_city || 'destination',
-        date: winningDate?.value || new Date().toISOString().slice(0, 10),
-        days: planRow.days || 1,
-        budget_per_person_inr: winningBudget,
-        people: Math.max(1, participants.length),
-        type: planRow.type,
-        comments: participants.map((p) => p.comment).filter(Boolean),
-      }
-
-      let plan
-      try {
-        plan = await callAIPlan(payload, { timeoutMs: 10000 })
-      } catch {
-        plan = generateFallbackPlan(payload)
-      }
-
-      await supabase
+    // Write the decided plan, guarded so we only ever finish an in-progress plan
+    // (never clobber a locked/decided one).
+    const finish = (aiPlanResult) =>
+      supabase
         .from('plans')
         .update({
           status: 'decided',
-          ai_plan: plan,
+          ai_plan: aiPlanResult,
           final_date_option: winningDate?.id || null,
           final_place_option: winningPlace?.id || null,
           final_budget: winningBudget,
         })
         .eq('id', planRow.id)
-        .eq('status', 'deciding')
+        .in('status', ['voting', 'deciding'])
+        .select('id')
+        .maybeSingle()
 
-      toast.success('Plan auto-generated based on votes!')
-      load()
-    } catch {
-      await supabase
-        .from('plans')
-        .update({ status: 'voting' })
-        .eq('id', state.plan.id)
-        .eq('status', 'deciding')
+    try {
+      // Hard 10s ceiling on the ENTIRE flow (status transition + AI call), so the
+      // skeleton always resolves even if a DB call hangs.
+      await Promise.race([
+        (async () => {
+          // 1. Claim the voting -> deciding transition. If another client already
+          //    claimed it, don't spin — just reload (#4).
+          if (planRow.status === 'voting') {
+            const { data: claimed, error: claimError } = await supabase
+              .from('plans')
+              .update({ status: 'deciding' })
+              .eq('id', planRow.id)
+              .eq('status', 'voting')
+              .select('id')
+              .maybeSingle()
+            if (claimError) throw claimError
+            if (!claimed) {
+              await load()
+              return
+            }
+          }
+
+          // 2. AI itinerary with template fallback on any failure/timeout.
+          let aiPlanResult
+          try {
+            aiPlanResult = await callAIPlan(payload, { timeoutMs: 10000 })
+          } catch (aiErr) {
+            console.error('Auto-decide: AI itinerary failed, using fallback:', aiErr)
+            aiPlanResult = generateFallbackPlan(payload)
+          }
+
+          // 3. Commit the decided plan.
+          const { data: done } = await finish(aiPlanResult)
+          if (done) {
+            toast.success(aiPlanResult.approx ? 'Plan ready (approx)' : 'Plan auto-generated based on votes!')
+          }
+          await load()
+        })(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Auto-decide timed out after 10s')), 10000)
+        ),
+      ])
+    } catch (err) {
+      // Any error or timeout: render the fallback itinerary immediately (#1, #5).
+      console.error('Auto-decide failed:', err?.message || err)
+      try {
+        await finish(generateFallbackPlan(payload))
+      } catch (writeErr) {
+        console.error('Auto-decide: fallback write failed:', writeErr?.message || writeErr)
+      }
+      await load()
     } finally {
+      // Loading state is ALWAYS cleared (#3).
       setAutoDeciding(false)
     }
   }
@@ -642,7 +681,7 @@ export default function PlanPage() {
       {/* LIVE RESULTS */}
       {(plan.status === 'voting' || plan.status === 'deciding') && (
         <section className="mt-6 space-y-4 px-4">
-          <StatusCard
+          <SectionCard
             title="Live Results"
             subtitle={`${stats.voted}/${stats.total} participants have voted`}
             tone="haldi"
@@ -715,14 +754,14 @@ export default function PlanPage() {
                 Read-only for guests — only the host can generate and lock this plan.
               </p>
             )}
-          </StatusCard>
+          </SectionCard>
         </section>
       )}
 
       {/* AI PLAN REVEAL */}
       {plan.ai_plan && (
         <section className="mt-6 space-y-4 px-4">
-          <StatusCard
+          <SectionCard
             title={plan.ai_plan.approx ? 'Final Plan (approx)' : 'Final Plan'}
             subtitle={plan.ai_plan.reason}
             tone="rani"
@@ -777,22 +816,22 @@ export default function PlanPage() {
                 </Button>
               </div>
             )}
-          </StatusCard>
+          </SectionCard>
         </section>
       )}
 
       {/* LOCKED PHASE */}
       {isLocked && (
         <section className="mt-6 space-y-4 px-4">
-          <StatusCard title="Plan Locked!" subtitle="Download your calendar invite" tone="peacock">
+          <SectionCard title="Plan Locked!" subtitle="Download your calendar invite" tone="peacock">
             <Button type="button" tone="haldi" block onClick={downloadCalendar}>
               <Calendar size={16} strokeWidth={2.5} />
               Add to Calendar (.ics)
             </Button>
-          </StatusCard>
+          </SectionCard>
 
           {tasks.length > 0 && (
-            <StatusCard title="Tasks" subtitle={`${tasks.filter((t) => t.done).length}/${tasks.length} done`}>
+            <SectionCard title="Tasks" subtitle={`${tasks.filter((t) => t.done).length}/${tasks.length} done`}>
               <ul className="mt-3 space-y-2">
                 {tasks.map((task) => (
                   <li key={task.id} className="flex items-center gap-2 text-small">
@@ -811,12 +850,12 @@ export default function PlanPage() {
                   </li>
                 ))}
               </ul>
-            </StatusCard>
+            </SectionCard>
           )}
 
-          <StatusCard title="Split expenses" subtitle="Log costs, settle up over UPI" tone="haldi">
+          <SectionCard title="Split expenses" subtitle="Log costs, settle up over UPI" tone="haldi">
             <Expenses plan={plan} participants={participants} />
-          </StatusCard>
+          </SectionCard>
         </section>
       )}
 
