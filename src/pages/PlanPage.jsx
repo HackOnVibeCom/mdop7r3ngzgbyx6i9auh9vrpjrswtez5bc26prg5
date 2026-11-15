@@ -269,6 +269,13 @@ export default function PlanPage() {
         participant = data
         setMyParticipant(data)
       } else {
+        // Only allow editing own vote
+        if (participant.device_id !== getDeviceId()) {
+          toast.error('You can only edit your own vote')
+          setSubmitting(false)
+          return
+        }
+
         const { error } = await supabase.from('participants').update({
           name: myName.trim(),
           area: myArea.trim() || null,
@@ -280,7 +287,7 @@ export default function PlanPage() {
         if (error) throw new Error(error.message)
       }
 
-      // Delete old votes
+      // Delete old votes (only if device matches)
       await supabase.from('votes').delete().eq('participant_id', participant.id)
 
       // Insert new votes
