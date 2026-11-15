@@ -1,0 +1,212 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-paper text-ink font-sans antialiased;
+    margin: 0;
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+    font-variation-settings: 'SOFT' 40, 'WONK' 1;
+    letter-spacing: -0.015em;
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :focus-visible {
+    outline: 3px solid #0f8b8d;
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
+    color: inherit;
+  }
+
+  ::selection {
+    background: #f4c430;
+    color: #1e1b2e;
+  }
+}
+
+@layer components {
+  /* ---- Riso paper card ---- */
+  .card-paper {
+    @apply rounded-card border-2 border-ink bg-paper;
+  }
+
+  .field {
+    @apply w-full rounded-input border-2 border-ink bg-paper-dark px-3 py-3 text-base
+           placeholder:text-ink/40 focus:bg-paper;
+    min-height: 48px;
+  }
+
+  .label-ink {
+    @apply mb-1.5 block text-small font-semibold text-ink/80;
+  }
+
+  /* ---- Perforated ticket edges + tear line ---- */
+  .ticket-notch {
+    position: relative;
+    isolation: isolate;
+  }
+  .ticket-notch::before,
+  .ticket-notch::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 18px;
+    height: 18px;
+    margin-top: -9px;
+    border: 2px solid #1e1b2e;
+    border-radius: 9999px;
+    background: #f6efe3;
+    z-index: 2;
+  }
+  .ticket-notch::before {
+    left: -10px;
+    clip-path: inset(0 0 0 50%);
+  }
+  .ticket-notch::after {
+    right: -10px;
+    clip-path: inset(0 50% 0 0);
+  }
+
+  .tear-line {
+    border-top: 2px dashed rgba(30, 27, 46, 0.45);
+  }
+  .tear-line-v {
+    border-left: 2px dashed rgba(30, 27, 46, 0.45);
+  }
+
+  /* ---- Rough rubber-stamp edge ---- */
+  .stamp-rough {
+    filter: url(#rough-edge);
+  }
+
+  /* ---- Ticket shine for 3D tilt cards ---- */
+  .tilt-shine {
+    background: linear-gradient(
+      105deg,
+      transparent 35%,
+      rgba(255, 255, 255, 0.55) 50%,
+      transparent 65%
+    );
+    mix-blend-mode: soft-light;
+  }
+
+  /* ---- Shimmer skeleton ---- */
+  .shimmer {
+    background-image: linear-gradient(
+      90deg,
+      #eadfcb 0%,
+      #f6efe3 40%,
+      #eadfcb 80%
+    );
+    background-size: 200% 100%;
+    @apply animate-shimmer;
+  }
+
+  /* ---- Range sliders (single + dual) ---- */
+  .dual-range,
+  .solo-range {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    pointer-events: none; /* only the thumb is grabbable, so stacked sliders both work */
+  }
+  .dual-range::-webkit-slider-runnable-track,
+  .solo-range::-webkit-slider-runnable-track {
+    background: transparent;
+    height: 100%;
+  }
+  .dual-range::-moz-range-track,
+  .solo-range::-moz-range-track {
+    background: transparent;
+  }
+  .dual-range::-webkit-slider-thumb,
+  .solo-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    pointer-events: auto;
+    height: 30px;
+    width: 30px;
+    border-radius: 9999px;
+    border: 2px solid #1e1b2e;
+    background: #f6efe3;
+    box-shadow: 2px 2px 0 #1e1b2e;
+    cursor: grab;
+    margin-top: 9px;
+  }
+  .dual-range::-moz-range-thumb,
+  .solo-range::-moz-range-thumb {
+    pointer-events: auto;
+    height: 26px;
+    width: 26px;
+    border-radius: 9999px;
+    border: 2px solid #1e1b2e;
+    background: #f6efe3;
+    box-shadow: 2px 2px 0 #1e1b2e;
+    cursor: grab;
+  }
+  .dual-range:active::-webkit-slider-thumb,
+  .solo-range:active::-webkit-slider-thumb {
+    background: #f4c430;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+@layer utilities {
+  .pb-safe {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* ---- Respect reduced motion everywhere ---- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
