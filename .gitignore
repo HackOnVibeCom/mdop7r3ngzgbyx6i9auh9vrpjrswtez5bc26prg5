@@ -14,6 +14,9 @@ dist-ssr
 # Keep template files
 !.env.example
 
+# Local helper that embeds the anon key — never commit
+set-vercel-env.ps1
+
 .DS_Store
 npm-debug.log*
 .vercel
