@@ -19,13 +19,13 @@ const STATUS_TONES = {
  */
 export default function BoardingPass({ plan, dateOptions = [], placeOptions = [], showQr = true }) {
   if (!plan) return null
-  const from = plan.from_city || 'Yahin kahin'
+  const from = plan.from_city || 'Origin TBD'
   const toLabel =
     placeOptions.length === 1
       ? placeOptions[0].label
       : placeOptions.length > 1
-        ? `${placeOptions.length} jagah`
-        : 'Decide karna hai'
+        ? `${placeOptions.length} places`
+        : 'To be decided'
 
   return (
     <TicketCard tone="ink" layoutId={`ticket-${plan.code}`}>
@@ -82,7 +82,7 @@ export default function BoardingPass({ plan, dateOptions = [], placeOptions = []
           <p className="font-mono text-h2 font-bold tracking-[0.18em]">{plan.code.toUpperCase()}</p>
           {(plan.budget_min || plan.budget_max) && (
             <p className="mt-1 font-mono text-micro text-ink/60">
-              {rupees(plan.budget_min)} – {rupees(plan.budget_max)} per banda
+              {rupees(plan.budget_min)} – {rupees(plan.budget_max)} per person
             </p>
           )}
           <p className="mt-1 text-micro text-ink/60">Host: {plan.host_name}</p>
@@ -95,7 +95,7 @@ export default function BoardingPass({ plan, dateOptions = [], placeOptions = []
               bgColor="#F6EFE3"
               fgColor="#1E1B2E"
               level="M"
-              aria-label="Plan ka QR code"
+              aria-label="Plan QR code"
             />
           </div>
         )}

@@ -33,7 +33,7 @@ export default function JourneyRail({ stages = JOURNEY_STAGES, current = 0, comp
   const index = Math.max(0, Math.min(current, stages.length - 1))
 
   return (
-    <nav aria-label="Plan ka safar" className={cn('w-full', className)}>
+    <nav aria-label="Plan journey progress" className={cn('w-full', className)}>
       <ol className="relative flex items-start justify-between gap-1">
         {/* the track */}
         <span

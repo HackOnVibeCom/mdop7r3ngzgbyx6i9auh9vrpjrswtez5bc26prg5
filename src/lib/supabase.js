@@ -24,7 +24,7 @@ export const functionsBase = isSupabaseConfigured ? `${url}/functions/v1` : ''
  * Throws an Error with a human (Hinglish-friendly) message on failure.
  */
 export async function callFunction(name, body, { timeoutMs = 25000 } = {}) {
-  if (!isSupabaseConfigured) throw new Error('Supabase set nahi hai (env missing)')
+  if (!isSupabaseConfigured) throw new Error('Supabase is not configured (missing environment variables)')
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   try {

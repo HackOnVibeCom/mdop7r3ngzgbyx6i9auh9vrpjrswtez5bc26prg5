@@ -26,7 +26,7 @@ const StatusCard = forwardRef(function StatusCard({ plan, dateOptions = [], plac
           {plan.emoji} {plan.title}
         </p>
         <p className="mt-1 text-[13px] font-semibold text-ink/70">
-          {plan.host_name} ne plan kiya hai
+          Planned by {plan.host_name}
         </p>
       </div>
 
@@ -34,12 +34,12 @@ const StatusCard = forwardRef(function StatusCard({ plan, dateOptions = [], plac
       <div className="flex flex-1 flex-col justify-between px-5 py-5">
         <div>
           <p className="font-display text-[26px] font-black leading-tight">
-            Vote daal do, <span className="text-saffron">10 second</span> lagenge.
+            Cast your vote, <span className="text-saffron">takes 10 seconds</span>.
           </p>
 
           {placeOptions.length > 0 && (
             <div className="mt-4">
-              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink/50">jagah options</p>
+              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink/50">place options</p>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
                 {placeOptions.slice(0, 4).map((option) => (
                   <span
@@ -71,7 +71,7 @@ const StatusCard = forwardRef(function StatusCard({ plan, dateOptions = [], plac
 
           {(plan.budget_min || plan.budget_max) && (
             <p className="mt-3 font-mono text-[13px] font-bold text-ink/70">
-              Budget: {rupees(plan.budget_min)} – {rupees(plan.budget_max)} per banda
+              Budget: {rupees(plan.budget_min)} – {rupees(plan.budget_max)} per person
             </p>
           )}
         </div>
@@ -93,7 +93,7 @@ const StatusCard = forwardRef(function StatusCard({ plan, dateOptions = [], plac
       {/* footer: the loop */}
       <div className="border-t-2 border-ink bg-night px-5 py-3">
         <p className="text-[12px] font-bold text-paper">
-          Apna plan banao → <span className="text-haldi">{referralUrl(plan.code)}</span>
+          Create your own plan → <span className="text-haldi">{referralUrl(plan.code)}</span>
         </p>
       </div>
     </div>

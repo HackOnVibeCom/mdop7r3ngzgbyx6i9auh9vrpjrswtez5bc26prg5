@@ -11,7 +11,7 @@ export function modeForType(type) {
 
 function requireDb() {
   if (!isSupabaseConfigured) {
-    throw new Error('Supabase connect nahi hai — .env.local mein keys daalo')
+    throw new Error('Supabase not connected — check credentials')
   }
 }
 
@@ -68,11 +68,11 @@ export async function createPlan(draft) {
     }
     lastError = error
     // 23505 = unique violation on `code`; anything else is a real failure.
-    if (error.code !== '23505') throw new Error(error.message || 'Plan ban nahi paaya')
+    if (error.code !== '23505') throw new Error(error.message || 'Failed to create plan')
   }
 
   if (!plan) {
-    throw new Error((lastError && lastError.message) || 'Code generate nahi ho paaya, phir try karo')
+    throw new Error((lastError && lastError.message) || 'Failed to generate code, please try again')
   }
 
   const rows = []
@@ -114,7 +114,7 @@ export async function createPlan(draft) {
 
   if (rows.length) {
     const { error } = await supabase.from('options').insert(rows)
-    if (error) throw new Error(error.message || 'Options save nahi hue')
+    if (error) throw new Error(error.message || 'Failed to save options')
   }
 
   return plan
@@ -131,7 +131,7 @@ export async function fetchPlanByCode(code) {
     .eq('code', clean)
     .maybeSingle()
 
-  if (error) throw new Error(error.message || 'Plan load nahi hua')
+  if (error) throw new Error(error.message || 'Failed to load plan')
   if (!plan) return null
 
   const { data: options, error: optionsError } = await supabase
@@ -141,7 +141,7 @@ export async function fetchPlanByCode(code) {
     .order('kind', { ascending: true })
     .order('sort', { ascending: true })
 
-  if (optionsError) throw new Error(optionsError.message || 'Options load nahi hue')
+  if (optionsError) throw new Error(optionsError.message || 'Failed to load options')
 
   return { plan, options: options || [] }
 }

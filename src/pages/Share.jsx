@@ -30,19 +30,19 @@ export default function Share() {
 
   const load = useCallback(async () => {
     if (!isSupabaseConfigured) {
-      setState({ loading: false, plan: null, options: [], error: 'Supabase keys set nahi hain' })
+      setState({ loading: false, plan: null, options: [], error: 'Supabase keys not configured' })
       return
     }
     setState((s) => ({ ...s, loading: true, error: '' }))
     try {
       const result = await fetchPlanByCode(clean)
       if (!result) {
-        setState({ loading: false, plan: null, options: [], error: 'Yeh plan nahi mila' })
+        setState({ loading: false, plan: null, options: [], error: 'Plan not found' })
         return
       }
       setState({ loading: false, plan: result.plan, options: result.options, error: '' })
     } catch (err) {
-      setState({ loading: false, plan: null, options: [], error: err.message || 'Load nahi hua' })
+      setState({ loading: false, plan: null, options: [], error: err.message || 'Failed to load plan' })
     }
   }, [clean])
 
@@ -66,7 +66,7 @@ export default function Share() {
       track('share_click', plan ? plan.id : null)
       setTimeout(() => setCopied(false), 1800)
     } else {
-      toast.error('Copy nahi hua — link manually select kar lo')
+      toast.error('Failed to copy — please copy link manually')
     }
   }
 
@@ -75,10 +75,10 @@ export default function Share() {
     try {
       const result = await downloadCard(cardRef.current, `chaloplan-${clean}.png`)
       track('card_download', plan ? plan.id : null)
-      if (result === 'downloaded') toast.ok('Card download ho gaya — status pe daal do')
-      if (result === 'shared') toast.ok('Bhej diya!')
+      if (result === 'downloaded') toast.ok('Card downloaded — ready to post!')
+      if (result === 'shared') toast.ok('Shared successfully!')
     } catch {
-      toast.error('Card ban nahi paaya, phir try karo')
+      toast.error('Could not generate card, please try again')
     } finally {
       setCardBusy(false)
     }
@@ -97,15 +97,15 @@ export default function Share() {
       <PageTransition className="px-4 pb-16 pt-6">
         <Logo size="sm" />
         <div className="mt-8 rounded-card border-2 border-ink bg-paper p-5 text-center shadow-riso">
-          <p className="font-hand text-h2 text-rani">Arre!</p>
-          <h1 className="mt-1 text-h2 font-black">{error || 'Plan nahi mila'}</h1>
-          <p className="mt-2 text-small text-ink/70">Code dobara check karo, ya naya plan bana lo.</p>
+          <p className="font-hand text-h2 text-rani">Oops!</p>
+          <h1 className="mt-1 text-h2 font-black">{error || 'Plan not found'}</h1>
+          <p className="mt-2 text-small text-ink/70">Check the code or create a new plan.</p>
           <div className="mt-4 flex flex-col gap-2">
             <Button type="button" tone="peacock" block onClick={load}>
-              Phir try karo
+              Try Again
             </Button>
             <Button as={Link} to="/new" tone="paper" block>
-              Naya plan banao
+              Create New Plan
             </Button>
           </div>
         </div>
@@ -121,14 +121,14 @@ export default function Share() {
           to={`/p/${clean}`}
           className="rounded-[10px] border-2 border-ink bg-paper-dark px-2.5 py-1 text-micro font-bold uppercase"
         >
-          Plan dekho
+          View Plan
         </Link>
       </header>
 
       <div className="px-4 pt-4">
-        <h1 className="text-h1 font-black">Link ban gaya! 🎟️</h1>
+        <h1 className="text-h1 font-black">Invite Link Ready! 🎟️</h1>
         <p className="mt-1 text-small text-ink/70">
-          {isHost(plan) ? 'Tum host ho.' : 'Host ne banaya hai.'} Ab group mein daalo —{' '}
+          {isHost(plan) ? 'You are the host.' : 'Created by the host.'} Share with your group —{' '}
           {deadlineLabel(plan.deadline)}.
         </p>
       </div>
@@ -155,30 +155,30 @@ export default function Share() {
           block
           onClick={() => track('share_click', plan.id)}
         >
-          <MessageCircle size={20} strokeWidth={2.5} /> WhatsApp pe bhejo
+          <MessageCircle size={20} strokeWidth={2.5} /> Share on WhatsApp
         </Button>
 
         <div className="flex gap-2">
           <Button type="button" tone="paper" size="md" block onClick={onCopy}>
             {copied ? <Check size={18} strokeWidth={2.5} /> : <Copy size={18} strokeWidth={2.5} />}
-            {copied ? 'Copy ho gaya' : 'Link copy'}
+            {copied ? 'Copied' : 'Copy Link'}
           </Button>
           <Button type="button" tone="haldi" size="md" block loading={cardBusy} onClick={onCard}>
-            <ImageDown size={18} strokeWidth={2.5} /> Status card
+            <ImageDown size={18} strokeWidth={2.5} /> Story Card
           </Button>
         </div>
 
         <div className="rounded-input border-2 border-dashed border-ink/40 bg-paper p-3">
-          <p className="font-mono text-micro uppercase tracking-widest text-ink/50">link</p>
+          <p className="font-mono text-micro uppercase tracking-widest text-ink/50">invite link</p>
           <p className="mt-0.5 break-all font-mono text-small font-bold">{link}</p>
         </div>
 
-        <HandNote dir="left">Group mein daalo, phir maza aayega</HandNote>
+        <HandNote dir="left">Share in your group to get votes</HandNote>
       </section>
 
       {/* message preview */}
       <section className="mt-6 px-4">
-        <h2 className="text-h3 font-black">Jo message jayega</h2>
+        <h2 className="text-h3 font-black">Message Preview</h2>
         <div className="mt-2 rounded-card border-2 border-ink bg-[#DCF8C6] p-3 shadow-riso-sm">
           <p className="whitespace-pre-line text-small">{message}</p>
         </div>
@@ -186,8 +186,8 @@ export default function Share() {
 
       {/* status card preview */}
       <section className="mt-6 px-4">
-        <h2 className="text-h3 font-black">Status card</h2>
-        <p className="mt-1 text-small text-ink/70">Yeh image WhatsApp status pe daal do, log khud aayenge.</p>
+        <h2 className="text-h3 font-black">Social Story Card</h2>
+        <p className="mt-1 text-small text-ink/70">Download and share this card on WhatsApp Status or Instagram Stories.</p>
         {/* The card is exported at its true 360x640 size, so it is only visually scaled here. */}
         <div className="mt-3 h-[500px] overflow-hidden sm:h-[660px]">
           <div className="origin-top scale-[0.78] sm:scale-100" style={{ width: 360 }}>
@@ -195,7 +195,7 @@ export default function Share() {
           </div>
         </div>
         <Button type="button" tone="paper" size="md" block loading={cardBusy} onClick={onCard}>
-          <Download size={18} strokeWidth={2.5} /> Card download karo
+          <Download size={18} strokeWidth={2.5} /> Download Card
         </Button>
       </section>
 

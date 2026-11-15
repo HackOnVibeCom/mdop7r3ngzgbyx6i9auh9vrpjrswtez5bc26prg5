@@ -11,7 +11,7 @@ export function TicketSkeleton({ lines = 3, className }) {
     <div
       className={cn('rounded-card border-2 border-ink/30 bg-paper p-4', className)}
       role="status"
-      aria-label="Load ho raha hai"
+      aria-label="Loading..."
     >
       <div className="flex items-center gap-3">
         <Skeleton className="h-10 w-10 rounded-full" />

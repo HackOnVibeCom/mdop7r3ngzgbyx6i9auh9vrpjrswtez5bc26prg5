@@ -17,11 +17,11 @@ export default function ViralFooter({ refCode = '', planId = null }) {
           onClick={() => track('cta_click', planId)}
           className="rounded-btn border-2 border-paper bg-saffron px-4 py-3 font-bold text-ink shadow-[4px_4px_0_#F6EFE3]"
         >
-          Apna plan banao →
+          Plan your own trip →
         </Link>
-        <p className="font-hand text-h3 text-haldi">Made with chai in Ghaziabad</p>
+        <p className="font-hand text-h3 text-haldi">Made for memorable group journeys</p>
         <p className="text-micro text-paper/60">
-          Plan banao, group bulao, ho jao gaayab. · HackOnVibe 2026 · 0xalgos
+          Create a plan, invite your group, take off. · HackOnVibe 2026
         </p>
       </div>
     </footer>

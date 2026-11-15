@@ -9,12 +9,12 @@ export default function Banners() {
     <div className="sticky top-0 z-50">
       {!online && (
         <p role="status" className="border-b-2 border-ink bg-chili px-4 py-1.5 text-center text-micro font-bold text-paper">
-          Internet gayab hai — jo dikh raha hai wo purana ho sakta hai.
+          You are offline — cached content may be displayed.
         </p>
       )}
       {!isSupabaseConfigured && (
         <p className="border-b-2 border-ink bg-haldi px-4 py-1.5 text-center text-micro font-bold text-ink">
-          Demo mode: Supabase keys set nahi hain (.env.local dekho).
+          Configuration notice: Supabase keys not detected (.env file required).
         </p>
       )}
     </div>

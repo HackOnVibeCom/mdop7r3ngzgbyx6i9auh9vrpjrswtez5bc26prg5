@@ -39,7 +39,7 @@ export default function Expenses({ plan, participants }) {
 
   async function addExpense() {
     if (!newExpense.title.trim() || !newExpense.amount || !newExpense.paid_by) {
-      toast.error('Sab fields bharo!')
+      toast.error('Please fill in all fields!')
       return
     }
 
@@ -77,10 +77,10 @@ export default function Expenses({ plan, participants }) {
         selected_people: [],
       })
       setAdding(false)
-      toast.success('Kharcha add ho gaya!')
+      toast.success('Expense added successfully!')
       loadData()
     } catch (err) {
-      toast.error(err.message || 'Kharcha save nahi hua')
+      toast.error(err.message || 'Failed to save expense')
     }
   }
 
@@ -88,7 +88,7 @@ export default function Expenses({ plan, participants }) {
     await supabase.from('expenses').delete().eq('id', expenseId)
     await recalculateSettlements()
     loadData()
-    toast.success('Delete ho gaya')
+    toast.success('Expense deleted')
   }
 
   async function recalculateSettlements() {
@@ -129,7 +129,7 @@ export default function Expenses({ plan, participants }) {
       <div className="rounded-card border-2 border-ink bg-paper p-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-mono text-micro uppercase tracking-widest text-ink/50">total kharcha</p>
+            <p className="font-mono text-micro uppercase tracking-widest text-ink/50">total expenses</p>
             <p className="mt-1 text-h2 font-black">{rupees(totalExpense)}</p>
             <p className="text-small text-ink/70">{rupees(perPerson)} per person (avg)</p>
           </div>
@@ -142,15 +142,15 @@ export default function Expenses({ plan, participants }) {
       {adding && (
         <div className="rounded-card border-2 border-ink bg-paper-dark p-4 space-y-3">
           <Field
-            label="Kya kharcha hua?"
-            placeholder="Cab fare"
+            label="Description"
+            placeholder="e.g. Cab fare, Dinner"
             value={newExpense.title}
             onChange={(e) => setNewExpense((n) => ({ ...n, title: e.target.value }))}
             maxLength={60}
           />
 
           <Field
-            label="Kitna?"
+            label="Amount"
             type="number"
             placeholder="500"
             inputMode="numeric"
@@ -172,12 +172,12 @@ export default function Expenses({ plan, participants }) {
           </Field>
 
           <Field
-            label="Kisne pay kiya?"
+            label="Paid by"
             as="select"
             value={newExpense.paid_by || ''}
             onChange={(e) => setNewExpense((n) => ({ ...n, paid_by: e.target.value }))}
           >
-            <option value="">Select karo</option>
+            <option value="">Select person</option>
             {participants.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -228,7 +228,7 @@ export default function Expenses({ plan, participants }) {
       {settlements.length > 0 && (
         <div className="rounded-card border-2 border-ink bg-rani/10 p-4">
           <p className="font-mono text-micro uppercase tracking-widest text-ink/50">settlement</p>
-          <p className="mt-1 text-small text-ink/70">Kaun kisko kitna dega</p>
+          <p className="mt-1 text-small text-ink/70">Who owes whom</p>
           <ul className="mt-2 space-y-2">
             {settlements.map((s) => (
               <li key={s.id} className="flex items-center gap-2 rounded-input border-2 border-ink bg-paper p-2">
@@ -257,7 +257,7 @@ export default function Expenses({ plan, participants }) {
 
       {expenses.length === 0 && !adding && (
         <div className="rounded-card border-2 border-dashed border-ink/40 bg-paper p-4 text-center">
-          <p className="text-small text-ink/60">Abhi tak koi kharcha nahi. Trip ke baad add kar lena.</p>
+          <p className="text-small text-ink/60">No expenses logged yet. Add anytime to split costs.</p>
         </div>
       )}
     </div>

@@ -19,17 +19,17 @@ export function whatsappLink(text) {
   return `https://wa.me/?text=${encodeURIComponent(text)}`
 }
 
-/** The pre-filled Hinglish group message. */
+/** The pre-filled group invite message. */
 export function inviteText({ hostName, title, emoji = '🎒', code }) {
   return (
-    `${hostName} ne '${title}' plan kiya hai ${emoji}\n` +
-    `Date, jagah, budget pe 10 sec mein vote karo 👉 ${planUrl(code)}`
+    `${hostName} created a plan: '${title}' ${emoji}\n` +
+    `Vote on dates, places & budget in 10 seconds 👉 ${planUrl(code)}`
   )
 }
 
 /** Nudge message for friends who opened but did not vote. */
 export function nudgeText({ name, title, code }) {
-  return `${name}, '${title}' pe tera vote baaki hai 👀\n10 second lagenge: ${planUrl(code)}`
+  return `Hey ${name}, your vote is needed for '${title}' 👀\nTakes 10 seconds: ${planUrl(code)}`
 }
 
 /**

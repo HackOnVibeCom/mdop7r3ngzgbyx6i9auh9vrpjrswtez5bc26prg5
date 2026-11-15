@@ -1,9 +1,9 @@
 export const TIME_SLOTS = [
-  { value: '', label: 'Koi bhi time' },
-  { value: 'morning', label: 'Subah' },
-  { value: 'afternoon', label: 'Dopahar' },
-  { value: 'evening', label: 'Shaam' },
-  { value: 'night', label: 'Raat' },
+  { value: '', label: 'Any time' },
+  { value: 'morning', label: 'Morning' },
+  { value: 'afternoon', label: 'Afternoon' },
+  { value: 'evening', label: 'Evening' },
+  { value: 'night', label: 'Night' },
 ]
 
 export function slotLabel(slot) {
@@ -57,16 +57,16 @@ export function hoursFromNow(hours) {
   return new Date(Date.now() + hours * 3600 * 1000).toISOString()
 }
 
-/** "22 ghante baaki" / "Deadline nikal gayi" */
+/** "22 hours left" / "Deadline passed" */
 export function deadlineLabel(iso) {
   if (!iso) return ''
   const diff = new Date(iso).getTime() - Date.now()
-  if (diff <= 0) return 'Deadline nikal gayi'
+  if (diff <= 0) return 'Deadline passed'
   const hours = Math.floor(diff / 3600000)
   if (hours >= 24) {
     const days = Math.round(hours / 24)
-    return `${days} din baaki`
+    return `${days} ${days === 1 ? 'day' : 'days'} left`
   }
-  if (hours >= 1) return `${hours} ghante baaki`
-  return `${Math.max(1, Math.round(diff / 60000))} minute baaki`
+  if (hours >= 1) return `${hours} ${hours === 1 ? 'hour' : 'hours'} left`
+  return `${Math.max(1, Math.round(diff / 60000))} min left`
 }

@@ -40,7 +40,7 @@ export default function Sheet({ open, onClose, title, tone = 'haldi', children }
         <div className="fixed inset-0 z-[80] flex items-end justify-center">
           <motion.button
             type="button"
-            aria-label="Band karo"
+            aria-label="Close"
             onClick={onClose}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -69,7 +69,7 @@ export default function Sheet({ open, onClose, title, tone = 'haldi', children }
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Band karo"
+                aria-label="Close"
                 className="grid h-9 w-9 place-items-center rounded-[10px] border-2 border-ink bg-paper text-ink"
               >
                 <X size={18} strokeWidth={2.5} />

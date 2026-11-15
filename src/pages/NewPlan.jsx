@@ -48,10 +48,11 @@ const PLAN_TYPES = [
 const EMOJIS = ['🎒', '🍿', '🎂', '🎉', '🍽️', '🏔️', '🏖️', '🚂', '🛺', '☕', '🎸', '✨']
 
 const DEADLINES = [
-  { value: 0.033, label: '2 minutes (testing)' },
-  { value: 0.083, label: '5 minutes' },
-  { value: 0.25, label: '15 minutes' },
   { value: 1, label: '1 hour' },
+  { value: 6, label: '6 hours' },
+  { value: 24, label: '24 hours (recommended)' },
+  { value: 72, label: '3 days' },
+  ...(import.meta.env.DEV ? [{ value: 0.033, label: '2 minutes (dev only)' }] : []),
 ]
 
 const DRAFT_KEY = 'chaloplan.draft'
@@ -81,7 +82,7 @@ function initialDraft() {
     movies: ['', ''],
     budgetMin: 1500,
     budgetMax: 5000,
-    deadlineHours: 0.033,
+    deadlineHours: 24,
     hostUpi: '',
   }
 }

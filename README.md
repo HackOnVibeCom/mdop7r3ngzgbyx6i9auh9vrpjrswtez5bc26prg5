@@ -1,200 +1,101 @@
-# ChaloPlan — Group Planning, Ek Link Mein 🎒
+# ChaloPlan — Effortless Group Planning in One Link 🎒
 
-**HackOnVibe Nov 2026** | **Solo by Mansi Yadav**
+**HackOnVibe Nov 2026** | **Solo Project by Mansi Yadav**
 
-> Ek link mein poora group plan: "chalo kahin chalte hain" se lekar trip ki memories tak. Friends ko signup nahi karna, aur har plan 5-10 naye log laata hai.
+> Group planning simplified into a single interactive link: from "let's go somewhere" to live voting, AI-crafted itineraries, and memory keeping. Zero signups required for friends, with a viral growth loop built into every step.
 
 ## 🌟 The Pitch
 
-**Problem:** WhatsApp group mein "kab chalein? kahan chalein?" pe 200 messages aate hain aur zyaadatar plans kabhi hote hi nahi. Date, jagah, budget, kaun kya laayega, sab alag-alag jagah bikhra rehta hai.
+**Problem:** Group plans almost always fail in messy chat threads. Hundreds of messages about "when should we go?" and "where to?", resulting in dispersed dates, budgets, and endless indecision.
 
-**Solution:** Ek banda plan banata hai aur link group mein daalta hai. Sab bina signup ke date, jagah aur budget pe vote karte hain. AI final plan + itinerary banata hai, kaam baant deta hai, aur trip ke baad memory card banata hai.
+**Solution:** One person creates a plan in 30 seconds and shares a single link. Friends vote in 10 seconds without downloading an app or creating an account. The platform deterministically finds the winning date, destination, and budget, while Google Gemini generates the full day-by-day itinerary, assigns tasks, and calculates minimum-transaction expense splits.
 
-**One-liner:** "Group plans WhatsApp mein marte hain. ChaloPlan unhe ek link mein zinda rakhta hai, aur har plan apne aap naye groups tak pahunchta hai."
+**One-liner:** "Group plans die in chat threads. ChaloPlan brings them to life in a single link, engineered to spread virally to new groups with every plan."
 
 ## ✨ Key Features
 
-- **Zero Signup** - Ek link, bas naam daalo aur vote karo
-- **AI-Powered** - Gemini se itinerary, tasks, aur recap
-- **Real-time Voting** - Supabase Realtime se live updates
-- **Fair Decisions** - Code se best date/place/budget (AI sirf likhta hai)
-- **Expense Settlement** - Greedy algorithm se minimum transactions
-- **Viral Loop** - Har plan `?ref=` se naye hosts laata hai
+- **Zero Signup Friction** - One link, friends just enter their name and vote in 10 seconds.
+- **AI-Powered Itineraries** - Google Gemini 2.0 Flash generates customized schedules, cost breakdowns, and task assignments.
+- **Real-Time Synchronous Voting** - Powered by Supabase Realtime for live updates as votes pour in.
+- **Fair & Deterministic Decisions** - Scoring algorithms compute winning dates, places, and median budgets directly in code before AI writes the narrative.
+- **Greedy Expense Settlement** - Graph-based algorithm minimizes the total number of peer-to-peer transactions required.
+- **Organic Viral Loop** - Every shared plan and story card carries referral tracking (`?ref=`), turning participants into new hosts.
 
 ## 🚀 Tech Stack
 
 - **Frontend:** Vite + React + Tailwind CSS + Framer Motion
-- **Backend:** Supabase (Postgres + Realtime + Storage + Edge Functions)
-- **AI:** Google Gemini 2.0 Flash (free tier)
-- **Data:** OpenStreetMap (Nominatim + Overpass) + Open-Meteo
-- **Deploy:** Cloudflare Pages (auto from GitHub)
+- **Backend:** Supabase (PostgreSQL + Realtime + Storage + Deno Edge Functions)
+- **AI Engine:** Google Gemini 2.0 Flash
+- **Geodata:** OpenStreetMap (Nominatim API) + Open-Meteo
+- **Deployment:** Cloudflare Pages (Automated CI/CD via GitHub Actions)
 
 ## 📁 Project Structure
 
 ```
 chaloplan/
 ├── src/
-│   ├── lib/              # Core logic
-│   │   ├── supabase.js   # DB client
-│   │   ├── ai.js         # AI wrappers
-│   │   ├── decide.js     # Voting algorithm
-│   │   ├── settle.js     # Expense settlement
-│   │   ├── geo.js        # Haversine, meeting point
-│   │   ├── share.js      # WhatsApp, .ics, cards
+│   ├── lib/              # Core business logic
+│   │   ├── supabase.js   # Database client & real-time listeners
+│   │   ├── ai.js         # Gemini AI wrappers
+│   │   ├── decide.js     # Deterministic voting & decision algorithm
+│   │   ├── settle.js     # Greedy expense settlement algorithm
+│   │   ├── geo.js        # Haversine distance & central meeting point
+│   │   ├── share.js      # WhatsApp, Calendar (.ics), & card generation
 │   │   └── ...
 │   ├── pages/
-│   │   ├── Landing.jsx   # Hero + floating tickets
-│   │   ├── NewPlan.jsx   # 3-step wizard
-│   │   ├── PlanPage.jsx  # Vote + AI reveal + details
-│   │   ├── Share.jsx     # QR + WhatsApp share
-│   │   └── Stats.jsx     # K-factor analytics
-│   └── components/       # Reusable UI
+│   │   ├── Landing.jsx   # Hero + interactive ticket interface
+│   │   ├── NewPlan.jsx   # 3-step creation wizard
+│   │   ├── PlanPage.jsx  # Live voting + AI itinerary + tasks + expenses
+│   │   ├── Share.jsx     # QR code + WhatsApp sharing + story card
+│   │   └── Stats.jsx     # Viral K-factor & growth analytics
+│   └── components/       # Design system components
 ├── supabase/
-│   ├── schema.sql        # Full schema + RLS
+│   ├── schema.sql        # Full database schema + Row Level Security
 │   └── functions/
-│       ├── ai/           # Gemini prompts
-│       ├── places/       # Nominatim + Overpass + Weather
-│       └── host/         # Host-only operations
-└── .env.local            # Your keys here
+│       ├── ai/           # Gemini AI Edge Function
+│       ├── places/       # Geocoding & Weather Edge Function
+│       └── host/         # Host-authorized operations Edge Function
+└── .env.production       # Live production configuration
 ```
-
-## 🔧 Setup Guide
-
-### Prerequisites
-- Node.js 20+
-- Supabase account (free)
-- Gemini API key (free from aistudio.google.com)
-
-### Step 1: Clone & Install
-```bash
-git clone <your-repo-url> chaloplan
-cd chaloplan
-npm install
-```
-
-### Step 2: Environment Variables
-Create `.env.local`:
-```env
-VITE_SUPABASE_URL=https://xxxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
-```
-
-### Step 3: Deploy Schema
-1. Supabase Dashboard → SQL Editor
-2. Paste `supabase/schema.sql`
-3. Run
-
-### Step 4: Deploy Edge Functions
-```bash
-npx supabase login
-npx supabase link --project-ref your-ref
-npx supabase secrets set GEMINI_API_KEY=your-key
-npx supabase secrets set GEMINI_MODEL=gemini-2.0-flash-exp
-npx supabase functions deploy ai
-npx supabase functions deploy places
-npx supabase functions deploy host
-```
-
-### Step 5: Run Locally
-```bash
-npm run dev
-```
-Visit `http://localhost:5173`
-
-### Step 6: Deploy to Production
-```bash
-git add .
-git commit -m "chore: setup complete"
-git push
-```
-Cloudflare Pages auto-deploys from `main` branch.
 
 ## 📊 How It Works
 
 ### 1. Create (30 seconds)
-Host picks type (Trip/Movie/Birthday/Party), enters 2-4 date options, 2-4 places, budget range.
+The host selects plan type (Trip, Movie, Birthday, Party, Dinner, or Custom), sets 2–4 dates, destinations, and a budget band.
 
-### 2. Share (WhatsApp)
-Pre-filled message: "Mansi ne 'Rishikesh weekend' plan kiya hai 🎒. Date, jagah, budget pe 10 sec mein vote karo 👉 link"
+### 2. Share
+A pre-formatted invite message and custom Social Story Card (9:16 PNG) are generated instantly with a short PNR code and QR.
 
 ### 3. Vote (10 seconds per friend)
-No signup. Enter name, tap Yes/Maybe/No on dates, select place, slide budget. Submit. Live results show who voted.
+No app install or signup required. Friends open the link on mobile or desktop, tap Yes / Maybe / No for dates, select favorite destinations, and submit their budget preference.
 
-### 4. AI Plan (auto or host-triggered)
-**Decision algorithm (code):**
-- Best date = highest score (Yes = 2pts, Maybe = 1pt)
-- Best place = most Yes votes (tie = AI picks with reason)
-- Best budget = median of all votes
+### 4. Deterministic Decision + AI Plan
+- **Winning Date:** Highest weighted score (`Yes` = 2 points, `Maybe` = 1 point).
+- **Winning Destination:** Highest positive votes (tie-breaks explained by AI).
+- **Optimal Budget:** Statistical median of all participant inputs (prevents outliers from skewing the cost).
+- **Gemini 2.0 Flash:** Crafts an optimized day-by-day itinerary, expense breakdown, and smart packing list.
 
-**AI writes (Gemini):**
-- Day-by-day itinerary
-- Cost breakdown
-- Packing list
-- Reason ("6/8 log Saturday free hain")
+### 5. Lock & Calendar Export
+The host reviews and locks the plan. All participants receive a standard calendar invitation (`.ics` format) that syncs seamlessly with Google Calendar and Apple Calendar.
 
-### 5. Lock
-Host edits and locks. Everyone gets calendar .ics file + "LOCKED" stamp animation.
+### 6. Automated Task Assignments
+AI generates and distributes preparation tasks (transportation booking, snacks, packing essentials) among participants.
 
-### 6. Tasks
-AI auto-assigns: "Cab book karo", "Snacks lekar aao", "First-aid kit". Anyone can swap or "I'll do it".
+### 7. Expense Splitting & 1-Click Settlement
+Participants log shared expenses. A greedy optimization algorithm computes the minimum number of payments required and provides direct UPI deep links.
 
-### 7. Expenses (Optional)
-Log kharcha → app calculates "kaun kisko kitna" → settle with UPI links (app never touches money).
+## 🎯 Viral Growth Architecture
 
-### 8. Memories (Post-trip)
-Upload 1-3 photos → AI recap ("8 dost, 2 din, 1 Maggi point") → shareable Memory Card for Instagram.
+- **Loop 1 (Voter to Host):** 1 host invites 5–10 friends. Voters experience the smooth zero-friction flow and click "Create your own plan".
+- **Loop 2 (Social Sharing):** After a plan is locked, hosts download and share aesthetic Boarding Pass / Story Cards on social media with embedded referral tags (`?ref=`).
+- **Telemetry:** Real-time K-factor analytics dashboard available at `/stats`.
 
-## 🎯 Viral Loop
+## 🔐 Security & Architecture
 
-**Loop 1 (Invite):** 1 host → 5-10 friends vote → some click "Plan your own" → new hosts
-
-**Loop 2 (Show-off):** Locked plan → share card on WhatsApp status → their followers see `?ref=` link
-
-**Tracking:** Every plan saves `ref_plan_id`. Stats page shows K-factor.
-
-## 🔐 Security & Privacy
-
-- **No passwords:** Device ID + localStorage for identity
-- **No payment:** App never handles money, just UPI deep links
-- **RLS:** Supabase Row Level Security (anon can read/insert, host function verifies `host_device_id`)
-- **Rate limits:** `place_cache` table prevents Overpass spam
-
-## 📈 Metrics (Target for Demo)
-
-- **15+ real plans** created
-- **80+ unique voters**
-- **5+ avg voters per plan**
-- **K-factor > 0.15** (viral coefficient)
-
-## 🚨 Known Limitations
-
-1. **No live prices** - All costs are AI estimates ("approx" label everywhere)
-2. **No auth** - Anyone with link can edit their name/votes (hackathon OK, production needs OTP)
-3. **Gemini rate limits** - Free tier has limits; cached fallbacks for demo
-4. **Manual booking** - App shows booking links (IRCTC, MakeMyTrip, etc.) but doesn't book
-
-## 🏆 Why This Wins
-
-✅ **Solves a real problem** - Every college group faces this weekly  
-✅ **Viral by design** - Each plan brings 5-10 new users  
-✅ **AI that matters** - Not just chatbot, actual trip planning  
-✅ **Zero friction** - No signup, works on any phone browser  
-✅ **Beautiful UI** - Boarding pass theme, smooth animations  
-✅ **Complete journey** - Idea → Vote → Plan → Tasks → Settle → Memories
-
-## 🎨 Design System
-
-**Theme:** Boarding pass / travel ticket  
-**Colors:** Warm cream paper, bold ink borders, hard shadows, pastel highlights  
-**Fonts:** Bricolage Grotesque (display), Inter (body), Caveat (handwritten)  
-**Animation:** Framer Motion for page transitions, ticket flips, confetti
-
-## 📜 License
-
-Built for **HackOnVibe Nov 2026**. Open source after the hackathon.
+- **Stateless Device Identification:** Anonymous device IDs stored in local storage eliminate password vulnerability while preserving voter integrity.
+- **Row Level Security (RLS):** Strict PostgreSQL policies ensure secure reads, voting inserts, and host modifications.
+- **Serverless Edge Isolation:** API keys remain strictly on backend edge functions and are never exposed to the client.
 
 ---
 
-**Made with ❤️ and ☕ by Mansi Yadav**
-
-*"Ek link mein saare jhagde khatam"*
+**Built with pride for HackOnVibe 2026 by Mansi Yadav.**

@@ -357,7 +357,7 @@ export default function PlanPage() {
   const host = isHost(plan)
   const stats = votingStats(participants, votes, options)
 
-  const canGenerate = plan.status === 'voting' && participants.length >= 0
+  const canGenerate = host && plan.status === 'voting' && participants.length >= 1
   const isLocked = plan.status === 'locked' || plan.status === 'live' || plan.status === 'done'
 
   return (

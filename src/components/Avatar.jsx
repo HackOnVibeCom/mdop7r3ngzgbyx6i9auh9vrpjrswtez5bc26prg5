@@ -14,7 +14,7 @@ export default function Avatar({ name = '', size = 'md', className, title }) {
   return (
     <span
       title={title || name}
-      aria-label={name || 'Dost'}
+      aria-label={name || 'Friend'}
       className={cn(
         'inline-flex shrink-0 items-center justify-center rounded-full border-2 border-ink font-bold',
         SIZES[size] || SIZES.md,

@@ -45,15 +45,15 @@ export default function Stats() {
     <PageTransition className="min-h-[100dvh] bg-night px-4 pb-16 pt-5 text-paper">
       <header className="flex items-center justify-between">
         <Link to="/" className="inline-flex items-center gap-1 text-small font-bold text-paper">
-          <ArrowLeft size={18} strokeWidth={2.5} /> Wapas
+          <ArrowLeft size={18} strokeWidth={2.5} /> Back
         </Link>
         <Logo size="sm" className="text-paper" />
       </header>
 
       <div className="mt-6">
-        <h1 className="text-h1 font-black text-haldi">Kitna phaila? 📊</h1>
+        <h1 className="text-h1 font-black text-haldi">Growth Metrics 📊</h1>
         <p className="mt-1 text-small text-paper/70">
-          ChaloPlan ka viral loop scoreboard. Real-time numbers.
+          ChaloPlan viral loop performance & real-time analytics.
         </p>
       </div>
 
@@ -63,19 +63,19 @@ export default function Stats() {
             <div className="rounded-card border-2 border-paper/70 bg-night p-4">
               <p className="font-mono text-h1 font-bold text-haldi">{stats.total_plans}</p>
               <p className="mt-1 text-small font-bold">Plans</p>
-              <p className="text-micro text-paper/60">total banaye gaye</p>
+              <p className="text-micro text-paper/60">total created</p>
             </div>
 
             <div className="rounded-card border-2 border-paper/70 bg-night p-4">
               <p className="font-mono text-h1 font-bold text-peacock">{stats.unique_voters}</p>
               <p className="mt-1 text-small font-bold">Voters</p>
-              <p className="text-micro text-paper/60">unique log</p>
+              <p className="text-micro text-paper/60">unique participants</p>
             </div>
 
             <div className="rounded-card border-2 border-paper/70 bg-night p-4">
               <p className="font-mono text-h1 font-bold text-rani">{stats.referred_plans}</p>
               <p className="mt-1 text-small font-bold">Referred Plans</p>
-              <p className="text-micro text-paper/60">?ref= se aaye</p>
+              <p className="text-micro text-paper/60">via referrals</p>
             </div>
 
             <div className="rounded-card border-2 border-paper/70 bg-night p-4">
@@ -100,10 +100,10 @@ export default function Stats() {
             </div>
             <p className="mt-2 text-micro text-paper/60">
               {kFactor >= 0.15
-                ? '🔥 Viral! Har plan naye plans la raha hai'
+                ? '🔥 Strong virality! Each plan brings new hosts'
                 : kFactor >= 0.05
-                  ? '📈 Growing. Thoda aur push chahiye'
-                  : '🌱 Early stage. Marketing shuru karo'}
+                  ? '📈 Growing steadily'
+                  : '🌱 Early stage product growth'}
             </p>
           </div>
 

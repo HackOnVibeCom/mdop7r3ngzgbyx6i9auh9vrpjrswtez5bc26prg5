@@ -16,10 +16,10 @@ import { track } from '../lib/events'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
 const STEPS = [
-  { n: '01', title: 'Banao', text: 'Plan type, 2-4 date options, jagah, budget. 30 second.' },
-  { n: '02', title: 'Bhejo', text: 'Ek link WhatsApp group mein daal do. Bas.' },
-  { n: '03', title: 'Vote', text: 'Dost bina signup 10 second mein vote karte hain.' },
-  { n: '04', title: 'Chalo', text: 'AI poora plan likhta hai. Kharcha bhi settle.' },
+  { n: '01', title: 'Create', text: 'Pick plan type, 2-4 dates, places, and budget. Takes 30 seconds.' },
+  { n: '02', title: 'Share', text: 'Drop a single link into your group chat. That’s it.' },
+  { n: '03', title: 'Vote', text: 'Friends vote in 10 seconds with zero app installs or signups.' },
+  { n: '04', title: 'Travel', text: 'AI generates the complete itinerary, tasks, and expense splits.' },
 ]
 
 const KINDS = [
@@ -112,9 +112,9 @@ export default function Landing() {
           </div>
           <div className="p-4">
             <h1 className="text-balance text-display font-black">
-              Plan banao, group bulao, <span className="text-saffron">ho jao gaayab.</span>
+              Plan together, invite friends, <span className="text-saffron">take off.</span>
             </h1>
-            <p className="mt-2 text-base text-ink/75">Ek link. Zero signup. Poora plan.</p>
+            <p className="mt-2 text-base text-ink/75">One link. Zero signup. Complete itinerary.</p>
             <div className="mt-4 flex flex-col gap-2">
               <Button
                 as={Link}
@@ -124,30 +124,30 @@ export default function Landing() {
                 block
                 onClick={() => track('cta_click', null)}
               >
-                Chalo! Plan banao
+                Let's Go! Create a Plan
               </Button>
-              <Button as="a" href="#kaise" size="md" tone="paper" block>
-                Dekho kaise kaam karta hai
+              <Button as="a" href="#how-it-works" size="md" tone="paper" block>
+                See how it works
               </Button>
             </div>
             <HandNote dir="left" className="mt-3">
-              yahan tap karo
+              tap here to start
             </HandNote>
           </div>
         </TicketCard>
       </section>
 
       {/* ---------- How it works ---------- */}
-      <section id="kaise" className="scroll-mt-4 px-4 pt-10">
-        <h2 className="text-h1 font-black">Kaise kaam karta hai?</h2>
-        <p className="mt-1 text-small text-ink/70">Chaar station. Ek hi link.</p>
+      <section id="how-it-works" className="scroll-mt-4 px-4 pt-10">
+        <h2 className="text-h1 font-black">How does it work?</h2>
+        <p className="mt-1 text-small text-ink/70">Four simple steps. One link.</p>
         <div className="mt-4 rounded-card border-2 border-ink bg-paper-dark p-3">
           <JourneyRail
             stages={[
-              { key: 'banao', label: 'Banao' },
-              { key: 'bhejo', label: 'Bhejo' },
+              { key: 'create', label: 'Create' },
+              { key: 'share', label: 'Share' },
               { key: 'vote', label: 'Vote' },
-              { key: 'chalo', label: 'Chalo' },
+              { key: 'travel', label: 'Travel' },
             ]}
             current={0}
           />
@@ -180,7 +180,7 @@ export default function Landing() {
         <div className="mx-auto flex w-full max-w-md items-stretch justify-between gap-2 text-center font-mono">
           {[
             { label: 'plans', value: counts.plans },
-            { label: 'dost', value: counts.friends },
+            { label: 'friends', value: counts.friends },
             { label: 'trips done', value: counts.done },
           ].map((item) => (
             <div key={item.label} className="flex-1">
@@ -193,7 +193,7 @@ export default function Landing() {
 
       {/* ---------- Plan kinds ---------- */}
       <section className="px-4 pt-10">
-        <h2 className="text-h1 font-black">Kis cheez ke liye?</h2>
+        <h2 className="text-h1 font-black">What is it for?</h2>
         <div className="mt-4 flex flex-wrap gap-3">
           {KINDS.map(({ label, tone, rotate, Icon }) => (
             <Sticker key={label} tone={tone} rotate={rotate} icon={<Icon size={16} strokeWidth={2.5} />}>
@@ -202,7 +202,7 @@ export default function Landing() {
           ))}
         </div>
         <p className="mt-4 font-hand text-h3 text-peacock">
-          …aur jo bhi group plan karne mein fail hota hai.
+          …and any group plan that normally dies in group chats.
         </p>
       </section>
 
