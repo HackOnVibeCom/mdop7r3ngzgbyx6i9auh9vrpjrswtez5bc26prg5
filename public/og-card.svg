@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="ChaloPlan">
+  <rect width="1200" height="630" fill="#F6EFE3"/>
+  <rect x="48" y="48" width="1104" height="534" fill="#F6EFE3" stroke="#1E1B2E" stroke-width="8"/>
+  <rect x="48" y="48" width="28" height="534" fill="#FF7A1A"/>
+  <circle cx="1040" cy="160" r="72" fill="#F4C430" stroke="#1E1B2E" stroke-width="6"/>
+  <path d="M80 470 L260 280 L420 390 L560 240 L780 400 L1120 220 V534 H80 Z" fill="#0F8B8D" stroke="#1E1B2E" stroke-width="6"/>
+  <path d="M80 510 L240 360 L400 450 L620 300 L900 470 L1120 340 V534 H80 Z" fill="#E8336D" stroke="#1E1B2E" stroke-width="6"/>
+  <text x="96" y="160" font-family="Georgia, serif" font-size="72" font-weight="800" fill="#1E1B2E">chalo·plan</text>
+  <text x="96" y="230" font-family="Georgia, serif" font-size="40" fill="#1E1B2E">One link. Vote in 10 seconds.</text>
+  <text x="96" y="290" font-family="ui-sans-serif, system-ui, sans-serif" font-size="28" fill="#1E1B2E"><’ Group plans that actually take off</text>
+</svg>
