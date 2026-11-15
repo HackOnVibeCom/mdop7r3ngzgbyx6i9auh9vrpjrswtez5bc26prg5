@@ -15,6 +15,7 @@ import ViralFooter from '../components/ViralFooter'
 import HandNote from '../components/HandNote'
 import StatusCard from '../components/StatusCard'
 import TicketCard from '../components/TicketCard'
+import Expenses from '../components/Expenses'
 import { TicketSkeleton } from '../components/Skeleton'
 import { useToast } from '../components/Toast'
 import { fetchPlanByCode, optionsOfKind, isHost } from '../lib/plans'
@@ -811,6 +812,10 @@ export default function PlanPage() {
               </ul>
             </StatusCard>
           )}
+
+          <StatusCard title="Split expenses" subtitle="Log costs, settle up over UPI" tone="haldi">
+            <Expenses plan={plan} participants={participants} />
+          </StatusCard>
         </section>
       )}
 
