@@ -38,8 +38,12 @@ export default function Stats() {
     )
   }
 
-  const kFactor = stats ? stats.k_factor : 0
-  const ctaRate = stats ? stats.cta_click_rate : 0
+  // PG numerics can arrive as strings; coerce so .toFixed never throws.
+  const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0)
+  const kFactor = num(stats?.k_factor)
+  const ctaRate = num(stats?.cta_click_rate)
+  const avgVoters = num(stats?.avg_voters_per_plan)
+  const avgLock = num(stats?.avg_minutes_to_lock)
 
   return (
     <PageTransition className="min-h-[100dvh] bg-night px-4 pb-16 pt-5 text-paper">
@@ -80,7 +84,7 @@ export default function Stats() {
 
             <div className="rounded-card border-2 border-paper/70 bg-night p-4">
               <p className="font-mono text-h1 font-bold text-saffron">
-                {stats.avg_voters_per_plan.toFixed(1)}
+                {avgVoters.toFixed(1)}
               </p>
               <p className="mt-1 text-small font-bold">Avg Voters</p>
               <p className="text-micro text-paper/60">per plan</p>
@@ -127,7 +131,7 @@ export default function Stats() {
             <div className="flex items-center justify-between rounded-input border-2 border-paper/40 bg-night px-3 py-2">
               <span className="text-small">Avg time to lock</span>
               <span className="font-mono font-bold text-saffron">
-                {stats.avg_minutes_to_lock.toFixed(0)} min
+                {avgLock.toFixed(0)} min
               </span>
             </div>
           </div>

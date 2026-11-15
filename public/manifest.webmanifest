@@ -5,9 +5,12 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#F6EFE3",
   "theme_color": "#F6EFE3",
+  "categories": ["travel", "social", "lifestyle"],
   "icons": [
-    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+    { "src": "/favicon.svg", "sizes": "48x48 72x72 96x96 128x128 192x192 256x256 512x512 any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon-maskable.svg", "sizes": "192x192 512x512 any", "type": "image/svg+xml", "purpose": "maskable" }
   ]
 }

@@ -574,7 +574,7 @@ export default function PlanPage() {
                             key={val}
                             type="button"
                             onClick={() => setMyVotes((v) => ({ ...v, [opt.id]: val }))}
-                            className={`flex-1 rounded-[10px] border-2 border-ink py-2 text-small font-bold uppercase ${active ? colorClass : 'bg-paper-dark text-ink/60'}`}
+                            className={`min-h-[44px] flex-1 rounded-[10px] border-2 border-ink py-2 text-small font-bold uppercase ${active ? colorClass : 'bg-paper-dark text-ink/60'}`}
                           >
                             {val === 'yes' ? 'Yes' : val === 'maybe' ? 'Maybe' : 'No'}
                           </button>
@@ -596,7 +596,7 @@ export default function PlanPage() {
                           key={opt.id}
                           type="button"
                           onClick={() => setMyVotes((v) => ({ ...v, [opt.id]: 'yes' }))}
-                          className={`rounded-[12px] border-2 border-ink px-3 py-2 text-small font-bold ${active ? 'bg-rani text-paper' : 'bg-paper-dark text-ink/70'}`}
+                          className={`min-h-[44px] rounded-[12px] border-2 border-ink px-3 py-2 text-small font-bold ${active ? 'bg-rani text-paper' : 'bg-paper-dark text-ink/70'}`}
                         >
                           {opt.label}
                         </button>
