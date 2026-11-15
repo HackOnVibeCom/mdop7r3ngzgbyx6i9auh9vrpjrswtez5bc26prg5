@@ -23,7 +23,7 @@ import { deadlineLabel, prettyDate, slotLabel } from '../lib/dates'
 import { rupees, approx } from '../lib/money'
 import { track } from '../lib/events'
 import { supabase, isSupabaseConfigured, callFunction } from '../lib/supabase'
-import { getDeviceId, getName, setName as saveNameToStorage } from '../lib/device'
+import { getDeviceId, getName, setName as saveNameToStorage, rememberPlan } from '../lib/device'
 import { bestDate, bestPlace, bestBudget, votingStats } from '../lib/decide'
 import { aiPlan as callAIPlan, aiTasks as callAITasks } from '../lib/ai'
 import { downloadIcs, makeIcs, nudgeText, whatsappLink } from '../lib/share'
@@ -70,6 +70,7 @@ export default function PlanPage() {
         return
       }
       setState({ loading: false, plan: result.plan, options: result.options, error: '' })
+      rememberPlan(result.plan.code) // show this plan on the device's /dashboard
       track('plan_view', result.plan.id)
 
       loadParticipants(result.plan.id)

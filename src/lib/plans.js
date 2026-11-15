@@ -1,6 +1,6 @@
 import { supabase, isSupabaseConfigured } from './supabase'
 import { makeCode } from './code'
-import { getDeviceId, getRef } from './device'
+import { getDeviceId, getRef, rememberPlan } from './device'
 
 /** Plan types that always run as a multi-day trip. */
 export const TRIP_TYPES = ['trip']
@@ -117,6 +117,7 @@ export async function createPlan(draft) {
     if (error) throw new Error(error.message || 'Failed to save options')
   }
 
+  rememberPlan(plan.code)
   return plan
 }
 

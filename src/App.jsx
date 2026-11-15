@@ -12,6 +12,7 @@ const NewPlan = lazy(() => import('./pages/NewPlan'))
 const PlanPage = lazy(() => import('./pages/PlanPage'))
 const Share = lazy(() => import('./pages/Share'))
 const Stats = lazy(() => import('./pages/Stats'))
+const Dashboard = lazy(() => import('./pages/Dashboard'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 
 function RouteFallback() {
@@ -52,6 +53,7 @@ export default function App() {
             <Route path="/p/:code" element={<PlanPage />} />
             <Route path="/p/:code/share" element={<Share />} />
             <Route path="/stats" element={<Stats />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AnimatePresence>

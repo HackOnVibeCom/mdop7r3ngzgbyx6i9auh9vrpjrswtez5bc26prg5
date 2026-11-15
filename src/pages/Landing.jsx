@@ -96,12 +96,20 @@ export default function Landing() {
     <PageTransition>
       <header className="flex items-center justify-between px-4 pt-5">
         <Logo />
-        <Link
-          to="/stats"
-          className="rounded-[10px] border-2 border-ink bg-paper-dark px-2.5 py-1 text-micro font-bold uppercase"
-        >
-          Stats
-        </Link>
+        <nav className="flex items-center gap-2">
+          <Link
+            to="/dashboard"
+            className="rounded-[10px] border-2 border-ink bg-paper-dark px-2.5 py-1 text-micro font-bold uppercase"
+          >
+            My Plans
+          </Link>
+          <Link
+            to="/stats"
+            className="rounded-[10px] border-2 border-ink bg-paper-dark px-2.5 py-1 text-micro font-bold uppercase"
+          >
+            Stats
+          </Link>
+        </nav>
       </header>
 
       {/* ---------- Hero ---------- */}

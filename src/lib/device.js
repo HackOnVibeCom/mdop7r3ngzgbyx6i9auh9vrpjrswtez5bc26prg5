@@ -1,6 +1,7 @@
 const DEVICE_KEY = 'chaloplan.device_id'
 const NAME_KEY = 'chaloplan.name'
 const REF_KEY = 'chaloplan.ref'
+const PLANS_KEY = 'chaloplan.my_plans'
 
 function safeGet(key) {
   try {
@@ -51,4 +52,29 @@ export function getRef() {
 
 export function setRef(code) {
   if (code) safeSet(REF_KEY, String(code).toLowerCase())
+}
+
+/** 6-char codes of every plan this device created or opened. Powers /dashboard (no login). */
+export function getMyPlanCodes() {
+  try {
+    const raw = safeGet(PLANS_KEY)
+    const list = raw ? JSON.parse(raw) : []
+    return Array.isArray(list) ? list.filter(Boolean) : []
+  } catch {
+    return []
+  }
+}
+
+/** Remember a plan code locally (newest first, de-duped). No-op in blocked storage. */
+export function rememberPlan(code) {
+  const clean = String(code || '').toLowerCase().trim()
+  if (!clean) return
+  const next = [clean, ...getMyPlanCodes().filter((c) => c !== clean)].slice(0, 100)
+  safeSet(PLANS_KEY, JSON.stringify(next))
+}
+
+/** Forget a plan code (used when a dashboard tile 404s). */
+export function forgetPlan(code) {
+  const clean = String(code || '').toLowerCase().trim()
+  safeSet(PLANS_KEY, JSON.stringify(getMyPlanCodes().filter((c) => c !== clean)))
 }
