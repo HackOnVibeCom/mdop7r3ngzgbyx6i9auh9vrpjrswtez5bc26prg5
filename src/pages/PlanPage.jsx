@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Share2, Sparkles, Lock, Calendar, CheckCircle2, Plus, Trash2 } from 'lucide-react'
 import confetti from 'canvas-confetti'
@@ -50,12 +50,20 @@ export default function PlanPage() {
   const [submitting, setSubmitting] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [locking, setLocking] = useState(false)
+  const [retrying, setRetrying] = useState(false)
 
   const [myParticipant, setMyParticipant] = useState(null)
   const [editingVote, setEditingVote] = useState(false)
   const hasVoted = myParticipant?.has_voted || false
   const ownsVote = Boolean(myParticipant && myParticipant.device_id === getDeviceId())
   const [autoDeciding, setAutoDeciding] = useState(false)
+  // Gate auto-decide until votes AND participants have loaded, so winners are real.
+  const [decisionDataReady, setDecisionDataReady] = useState(false)
+  const loadedRef = useRef({ votes: false, participants: false })
+  const markLoaded = useCallback((key) => {
+    loadedRef.current[key] = true
+    if (loadedRef.current.votes && loadedRef.current.participants) setDecisionDataReady(true)
+  }, [])
 
   const load = useCallback(async () => {
     if (!isSupabaseConfigured) {
@@ -94,16 +102,20 @@ export default function PlanPage() {
       setMyBudget(mine.budget_vote || 3000)
       setMyComment(mine.comment || '')
     }
-  }, [])
+    markLoaded('participants')
+  }, [markLoaded])
 
   const loadVotes = useCallback(async (planId) => {
     const { data: optionsData } = await supabase.from('options').select('id').eq('plan_id', planId)
-    if (!optionsData) return
-
-    const optionIds = optionsData.map((o) => o.id)
-    const { data } = await supabase.from('votes').select('*').in('option_id', optionIds)
-    setVotes(data || [])
-  }, [])
+    const optionIds = (optionsData || []).map((o) => o.id)
+    if (optionIds.length) {
+      const { data } = await supabase.from('votes').select('*').in('option_id', optionIds)
+      setVotes(data || [])
+    } else {
+      setVotes([])
+    }
+    markLoaded('votes')
+  }, [markLoaded])
 
   const loadTasks = useCallback(async (planId) => {
     const { data } = await supabase.from('tasks').select('*, assignee:assignee_id(*)').eq('plan_id', planId)
@@ -127,10 +139,12 @@ export default function PlanPage() {
     if (!state.plan.deadline) return
     if (new Date(state.plan.deadline) > new Date()) return
     if (state.plan.status !== 'voting' && state.plan.status !== 'deciding') return
+    // Wait for votes + participants so the decision uses real data (not an empty set).
+    if (!decisionDataReady) return
     setAutoDeciding(true)
     autoDecide()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.plan, autoDeciding])
+  }, [state.plan, autoDeciding, decisionDataReady])
 
   // Winners + AI payload. Zero place options must NOT block — we fall back to the
   // host's from-city or a "To be decided" placeholder.
@@ -179,12 +193,12 @@ export default function PlanPage() {
         .maybeSingle()
 
     try {
-      // Hard 10s ceiling on the ENTIRE flow (status transition + AI call), so the
-      // skeleton always resolves even if a DB call hangs.
+      // Hard 10s ceiling on the ENTIRE flow, so the skeleton always resolves even
+      // if a DB call or the model hangs.
       await Promise.race([
         (async () => {
-          // 1. Claim the voting -> deciding transition. If another client already
-          //    claimed it, don't spin — just reload (#4).
+          // Claim the voting -> deciding transition. If another client already
+          // claimed it, don't spin — just reload (#4).
           if (planRow.status === 'voting') {
             const { data: claimed, error: claimError } = await supabase
               .from('plans')
@@ -200,20 +214,18 @@ export default function PlanPage() {
             }
           }
 
-          // 2. AI itinerary with template fallback on any failure/timeout.
+          // Real AI itinerary, with the instant template as a fallback. The model
+          // (gemini-flash-lite) typically answers in 2-4s, inside the 10s budget.
           let aiPlanResult
           try {
-            aiPlanResult = await callAIPlan(payload, { timeoutMs: 10000 })
+            aiPlanResult = await callAIPlan(payload, { timeoutMs: 9000 })
           } catch (aiErr) {
-            console.error('Auto-decide: AI itinerary failed, using fallback:', aiErr)
+            console.error('Auto-decide: AI failed, using template fallback:', aiErr?.message || aiErr)
             aiPlanResult = generateFallbackPlan(payload)
           }
 
-          // 3. Commit the decided plan.
           const { data: done } = await finish(aiPlanResult)
-          if (done) {
-            toast.success(aiPlanResult.approx ? 'Plan ready (approx)' : 'Plan auto-generated based on votes!')
-          }
+          if (done) toast.success(aiPlanResult.approx ? 'Plan decided (template)' : 'AI plan ready!')
           await load()
         })(),
         new Promise((_, reject) =>
@@ -221,7 +233,7 @@ export default function PlanPage() {
         ),
       ])
     } catch (err) {
-      // Any error or timeout: render the fallback itinerary immediately (#1, #5).
+      // Any error or timeout: render the template fallback immediately (#1, #5).
       console.error('Auto-decide failed:', err?.message || err)
       try {
         await finish(generateFallbackPlan(payload))
@@ -362,7 +374,8 @@ export default function PlanPage() {
 
       let plan
       try {
-        plan = await callAIPlan(payload, { timeoutMs: 10000 })
+        // Deliberate host action — wait long enough for the model (template on failure).
+        plan = await callAIPlan(payload, { timeoutMs: 48000 })
       } catch {
         plan = generateFallbackPlan(payload)
       }
@@ -444,6 +457,41 @@ export default function PlanPage() {
       toast.error(err.message || 'Failed to lock plan')
     } finally {
       setLocking(false)
+    }
+  }
+
+  // Host-only: re-attempt a real AI itinerary when the current plan is the template fallback.
+  async function retryAI() {
+    if (!isHost(state.plan)) {
+      toast.error('Only the host can retry the AI plan')
+      return
+    }
+    setRetrying(true)
+    try {
+      const { payload, winningDate, winningPlace, winningBudget } = buildDecisionPayload(state.plan)
+      // Generous budget: this is a deliberate host action, and the model can take ~15s.
+      // Throws on failure/timeout — the catch keeps the existing template plan.
+      const aiPlanResult = await callAIPlan(payload, { timeoutMs: 48000 })
+      try {
+        await callFunction('host', {
+          action: 'generate',
+          plan_id: state.plan.id,
+          device_id: getDeviceId(),
+          ai_plan: aiPlanResult,
+          final_date_option: winningDate?.id || null,
+          final_place_option: winningPlace?.id || null,
+          final_budget: winningBudget,
+        })
+      } catch {
+        await supabase.from('plans').update({ ai_plan: aiPlanResult }).eq('id', state.plan.id)
+      }
+      toast.success('AI itinerary ready!')
+      load()
+    } catch (err) {
+      console.error('Retry with AI failed:', err?.message || err)
+      toast.error('AI still unavailable — keeping the template plan')
+    } finally {
+      setRetrying(false)
     }
   }
 
@@ -766,6 +814,18 @@ export default function PlanPage() {
             subtitle={plan.ai_plan.reason}
             tone="rani"
           >
+            {plan.ai_plan.approx && (
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-input border-2 border-dashed border-ink/40 bg-haldi/20 px-3 py-2">
+                <p className="text-micro font-bold text-ink/70">Template plan (AI unavailable)</p>
+                {host && !isLocked && (
+                  <Button type="button" tone="peacock" size="sm" loading={retrying} onClick={retryAI}>
+                    <Sparkles size={14} strokeWidth={2.5} />
+                    {retrying ? 'Retrying…' : 'Retry with AI'}
+                  </Button>
+                )}
+              </div>
+            )}
+
             <div className="mt-3 space-y-3">
               {plan.ai_plan.itinerary?.map((day, i) => (
                 <div key={i}>
