@@ -19,7 +19,7 @@ create table if not exists plans (
   days int default 1,
   budget_min int, budget_max int,
   deadline timestamptz,
-  status text default 'voting' check (status in ('voting','locked','live','done')),
+  status text default 'voting' check (status in ('voting','deciding','decided','locked','live','done')),
   final_date_option uuid, final_place_option uuid, final_movie_option uuid,
   final_budget int,
   meeting_point jsonb,           -- {name, lat, lon}
@@ -162,7 +162,7 @@ declare
     'expense_shares','settlements','memories','events'
   ];
   updatable text[] := array[
-    'participants','votes','tasks','settlements','expenses'
+    'plans','participants','votes','tasks','settlements','expenses'
   ];
 begin
   foreach t in array readable loop
@@ -283,3 +283,8 @@ as $$
 $$;
 
 grant execute on function get_stats() to anon, authenticated;
+
+-- Allow auto-decide status values on existing databases.
+alter table plans drop constraint if exists plans_status_check;
+alter table plans add constraint plans_status_check
+  check (status in ('voting','deciding','decided','locked','live','done'));

@@ -28,7 +28,7 @@ import { aiPlan as callAIPlan, aiTasks as callAITasks } from '../lib/ai'
 import { downloadIcs, makeIcs } from '../lib/share'
 import { generateFallbackPlan } from '../lib/fallbackPlan'
 
-const STAGE_FOR_STATUS = { voting: 2, locked: 5, live: 6, done: 7 }
+const STAGE_FOR_STATUS = { voting: 2, deciding: 3, decided: 4, locked: 5, live: 6, done: 7 }
 
 export default function PlanPage() {
   const { code = '' } = useParams()
@@ -115,95 +115,73 @@ export default function PlanPage() {
     load()
   }, [load])
 
-  // Auto-decide when deadline passes
+  // Auto-decide when deadline passes — first client to open the plan wins the DB lock.
   useEffect(() => {
     if (!state.plan || state.plan.status !== 'voting' || autoDeciding) return
-    
-    const deadline = new Date(state.plan.deadline)
-    const now = new Date()
-    
-    if (now >= deadline && participants.length >= 1) {
-      setAutoDeciding(true)
-      autoDecide()
-    }
-  }, [state.plan, participants, autoDeciding])
+    if (!state.plan.deadline) return
+    if (new Date(state.plan.deadline) > new Date()) return
+    setAutoDeciding(true)
+    autoDecide()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.plan, autoDeciding])
 
   async function autoDecide() {
+    const planRow = state.plan
+    if (!planRow) {
+      setAutoDeciding(false)
+      return
+    }
     try {
       const dateOptions = optionsOfKind(state.options, 'date')
       const placeOptions = optionsOfKind(state.options, 'place')
-
-      if (!dateOptions.length) {
-        console.warn('Auto-decide skipped: no date options')
-        return
-      }
-
       const winningDate = bestDate(dateOptions, votes)
-      const winningPlaceResult = bestPlace(placeOptions, votes)
-      const winningBudget = bestBudget(participants.map((p) => p.budget_vote))
+      const winningPlace = bestPlace(placeOptions, votes)
+      const winningBudget = bestBudget(participants.map((p) => p.budget_vote)) || 3000
 
-      const winningPlace = winningPlaceResult?.needsTieBreak
-        ? winningPlaceResult.options[0]
-        : winningPlaceResult
-
-      // Try to transition status atomically
       const { data: updated, error: updateError } = await supabase
         .from('plans')
         .update({ status: 'deciding' })
-        .eq('id', state.plan.id)
+        .eq('id', planRow.id)
         .eq('status', 'voting')
-        .select()
-        .single()
+        .select('id')
+        .maybeSingle()
 
       if (updateError || !updated) {
-        console.log('Auto-decide already running or plan status changed')
         return
       }
 
-      // Call AI with 10s timeout
-      let plan
-      try {
-        const controller = new AbortController()
-        const timeout = setTimeout(() => controller.abort(), 10000)
-        
-        plan = await callAIPlan({
-          place: winningPlace?.label || 'destination',
-          date: winningDate.value,
-          days: state.plan.days || 1,
-          budget_per_person_inr: winningBudget || 3000,
-          people: participants.length,
-          type: state.plan.type,
-          comments: participants.map((p) => p.comment).filter(Boolean),
-        })
-        
-        clearTimeout(timeout)
-      } catch (aiError) {
-        console.warn('AI plan failed, using fallback:', aiError)
-        plan = generateFallbackPlan({
-          place: winningPlace?.label || 'destination',
-          date: winningDate.value,
-          days: state.plan.days || 1,
-          budget_per_person_inr: winningBudget || 3000,
-          type: state.plan.type,
-        })
+      const payload = {
+        place: winningPlace?.label || planRow.from_city || 'destination',
+        date: winningDate?.value || new Date().toISOString().slice(0, 10),
+        days: planRow.days || 1,
+        budget_per_person_inr: winningBudget,
+        people: Math.max(1, participants.length),
+        type: planRow.type,
+        comments: participants.map((p) => p.comment).filter(Boolean),
       }
 
-      // Save final decision
+      let plan
+      try {
+        plan = await callAIPlan(payload, { timeoutMs: 10000 })
+      } catch {
+        plan = generateFallbackPlan(payload)
+      }
+
       await supabase
         .from('plans')
         .update({
           status: 'decided',
           ai_plan: plan,
-          final_date_option: winningDate.id || null,
+          final_date_option: winningDate?.id || null,
           final_place_option: winningPlace?.id || null,
-          final_budget: winningBudget || null,
+          final_budget: winningBudget,
         })
-        .eq('id', state.plan.id)
+        .eq('id', planRow.id)
+        .eq('status', 'deciding')
 
       toast.success('Plan auto-generated based on votes!')
-    } catch (err) {
-      console.error('Auto-decide error:', err)
-      // Reset status back to voting if failed
+      load()
+    } catch {
       await supabase
         .from('plans')
         .update({ status: 'voting' })
@@ -313,28 +291,34 @@ export default function PlanPage() {
   }
 
   async function generateAIPlan() {
+    if (!isHost(state.plan)) {
+      toast.error('Only the host can generate the plan')
+      return
+    }
     setGenerating(true)
     try {
       const dateOptions = optionsOfKind(state.options, 'date')
       const placeOptions = optionsOfKind(state.options, 'place')
-
       const winningDate = bestDate(dateOptions, votes)
-      const winningPlaceResult = bestPlace(placeOptions, votes)
-      const winningBudget = bestBudget(participants.map((p) => p.budget_vote))
+      const winningPlace = bestPlace(placeOptions, votes)
+      const winningBudget = bestBudget(participants.map((p) => p.budget_vote)) || 3000
 
-      const winningPlace = winningPlaceResult.needsTieBreak
-        ? winningPlaceResult.options[0]
-        : winningPlaceResult
-
-      const plan = await callAIPlan({
-        place: winningPlace.label,
-        date: winningDate.value,
+      const payload = {
+        place: winningPlace?.label || state.plan.from_city || 'destination',
+        date: winningDate?.value || new Date().toISOString().slice(0, 10),
         days: state.plan.days || 1,
-        budget_per_person_inr: winningBudget || 3000,
-        people: participants.length,
+        budget_per_person_inr: winningBudget,
+        people: Math.max(1, participants.length),
         type: state.plan.type,
         comments: participants.map((p) => p.comment).filter(Boolean),
-      })
+      }
+
+      let plan
+      try {
+        plan = await callAIPlan(payload, { timeoutMs: 10000 })
+      } catch {
+        plan = generateFallbackPlan(payload)
+      }
 
       try {
         await callFunction('host', {
@@ -342,24 +326,25 @@ export default function PlanPage() {
           plan_id: state.plan.id,
           device_id: getDeviceId(),
           ai_plan: plan,
-          final_date_option: winningDate.id,
-          final_place_option: winningPlace.id,
+          final_date_option: winningDate?.id || null,
+          final_place_option: winningPlace?.id || null,
           final_budget: winningBudget,
         })
-      } catch (hostErr) {
-        console.warn('Host function fallback to direct DB update:', hostErr)
+      } catch {
         await supabase
           .from('plans')
           .update({
+            status: state.plan.status === 'voting' ? 'decided' : state.plan.status,
             ai_plan: plan,
-            final_date_option: winningDate.id || null,
-            final_place_option: winningPlace.id || null,
-            final_budget: winningBudget || null,
+            final_date_option: winningDate?.id || null,
+            final_place_option: winningPlace?.id || null,
+            final_budget: winningBudget,
           })
           .eq('id', state.plan.id)
       }
 
-      toast.success('AI has generated your itinerary!')
+      toast.success(plan.approx ? 'Template itinerary ready (approx)' : 'AI has generated your itinerary!')
+      load()
     } catch (err) {
       toast.error(err.message || 'Failed to generate AI plan')
     } finally {
@@ -368,6 +353,10 @@ export default function PlanPage() {
   }
 
   async function lockPlan() {
+    if (!isHost(state.plan)) {
+      toast.error('Only the host can lock the plan')
+      return
+    }
     setLocking(true)
     try {
       try {
@@ -465,7 +454,8 @@ export default function PlanPage() {
   const host = isHost(plan)
   const stats = votingStats(participants, votes, options)
 
-  const canGenerate = host && plan.status === 'voting' && participants.length >= 1
+  const canGenerate =
+    host && (plan.status === 'voting' || plan.status === 'decided') && participants.length >= 0
   const isLocked = plan.status === 'locked' || plan.status === 'live' || plan.status === 'done'
 
   return (
@@ -489,6 +479,13 @@ export default function PlanPage() {
           <JourneyRail stages={JOURNEY_STAGES} current={STAGE_FOR_STATUS[plan.status] ?? 2} compact />
         </div>
       </div>
+
+      {(plan.status === 'deciding' || autoDeciding) && (
+        <section className="mt-6 px-4">
+          <TicketSkeleton lines={3} />
+          <p className="mt-2 text-center text-small text-ink/70">Locking in votes and writing the itinerary…</p>
+        </section>
+      )}
 
       {/* VOTING PHASE */}
       {plan.status === 'voting' && !hasVoted && (
@@ -598,7 +595,7 @@ export default function PlanPage() {
       )}
 
       {/* LIVE RESULTS */}
-      {plan.status === 'voting' && (
+      {(plan.status === 'voting' || plan.status === 'deciding') && (
         <section className="mt-6 space-y-4 px-4">
           <StatusCard
             title="Live Results"
@@ -660,7 +657,11 @@ export default function PlanPage() {
       {/* AI PLAN REVEAL */}
       {plan.ai_plan && (
         <section className="mt-6 space-y-4 px-4">
-          <StatusCard title="Final Plan" subtitle={plan.ai_plan.reason} tone="rani">
+          <StatusCard
+            title={plan.ai_plan.approx ? 'Final Plan (approx)' : 'Final Plan'}
+            subtitle={plan.ai_plan.reason}
+            tone="rani"
+          >
             <div className="mt-3 space-y-3">
               {plan.ai_plan.itinerary?.map((day, i) => (
                 <div key={i}>

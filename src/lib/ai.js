@@ -59,9 +59,10 @@ export async function aiPlan({
   people,
   type,
   comments = [],
-}) {
-  try {
-    const result = await callFunction('ai', {
+}, { timeoutMs = 10000 } = {}) {
+  const result = await callFunction(
+    'ai',
+    {
       mode: 'plan',
       place,
       date,
@@ -70,33 +71,13 @@ export async function aiPlan({
       people,
       type,
       comments,
-    })
-    return result
-  } catch (err) {
-    console.error('AI plan failed:', err)
-    // Fallback: minimal plan
-    return {
-      reason: `${people} friends heading to ${place}!`,
-      itinerary: [
-        {
-          day: 1,
-          items: [
-            { time: '08:00', activity: 'Depart and begin journey' },
-            { time: '12:00', activity: 'Lunch & refreshment break' },
-            { time: '15:00', activity: `Arrive at ${place} and check in` },
-            { time: '20:00', activity: 'Dinner and local evening walk' },
-          ],
-        },
-      ],
-      cost_breakdown: [
-        { item: 'Travel', inr_per_person: Math.round(budget_per_person_inr * 0.3) },
-        { item: 'Stay', inr_per_person: Math.round(budget_per_person_inr * 0.4) },
-        { item: 'Food', inr_per_person: Math.round(budget_per_person_inr * 0.2) },
-        { item: 'Misc', inr_per_person: Math.round(budget_per_person_inr * 0.1) },
-      ],
-      packing_list: ['Clothes', 'Phone charger', 'Water bottle', 'Sunglasses', 'First aid kit'],
-    }
+    },
+    { timeoutMs }
+  )
+  if (!result || !Array.isArray(result.itinerary)) {
+    throw new Error('AI returned an incomplete itinerary')
   }
+  return result
 }
 
 /**

@@ -76,6 +76,7 @@ serve(async (req) => {
       const { ai_plan, final_date_option, final_place_option, final_movie_option, final_budget, meeting_point } = input as GenerateInput
 
       const updates: any = {
+        status: 'decided',
         ai_plan,
         final_date_option: final_date_option || null,
         final_place_option: final_place_option || null,
