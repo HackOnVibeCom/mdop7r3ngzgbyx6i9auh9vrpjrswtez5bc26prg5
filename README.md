@@ -96,6 +96,11 @@ Participants log shared expenses. A greedy optimization algorithm computes the m
 - **Row Level Security (RLS):** Strict PostgreSQL policies ensure secure reads, voting inserts, and host modifications.
 - **Serverless Edge Isolation:** API keys remain strictly on backend edge functions and are never exposed to the client.
 
+## Known limitations
+
+- **Own-vote protection is enforced in the UI** (edit/delete only when `participants.device_id` matches this browser’s `localStorage` device ID). Postgres RLS cannot see that device ID because there is no login/JWT, so a determined caller with the anon key could still patch another row. Host-only generate/lock goes through the `host` Edge Function, which *does* check `host_device_id`.
+- Gemini keys live only in Supabase secrets (`GEMINI_API_KEY`, `GEMINI_MODEL`). The frontend never receives them.
+
 ---
 
 **Built with pride for HackOnVibe 2026 by Mansi Yadav.**

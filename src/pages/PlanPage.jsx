@@ -51,7 +51,9 @@ export default function PlanPage() {
   const [locking, setLocking] = useState(false)
 
   const [myParticipant, setMyParticipant] = useState(null)
+  const [editingVote, setEditingVote] = useState(false)
   const hasVoted = myParticipant?.has_voted || false
+  const ownsVote = Boolean(myParticipant && myParticipant.device_id === getDeviceId())
   const [autoDeciding, setAutoDeciding] = useState(false)
 
   const load = useCallback(async () => {
@@ -265,7 +267,9 @@ export default function PlanPage() {
         if (error) throw new Error(error.message)
       }
 
-      // Delete old votes (only if device matches)
+      if (participant.device_id !== getDeviceId()) {
+        throw new Error('You can only edit your own vote')
+      }
       await supabase.from('votes').delete().eq('participant_id', participant.id)
 
       // Insert new votes
@@ -282,7 +286,9 @@ export default function PlanPage() {
 
       track('vote', state.plan.id)
       confetti({ particleCount: 60, spread: 60, origin: { y: 0.7 } })
-      toast.success(`You are #${participants.length + 1} to vote!`)
+      toast.success(`You are #${participants.length + (hasVoted ? 0 : 1)} to vote!`)
+      setEditingVote(false)
+      load()
     } catch (err) {
       toast.error(err.message || 'Failed to submit vote')
     } finally {
@@ -487,8 +493,40 @@ export default function PlanPage() {
         </section>
       )}
 
+      {plan.status === 'voting' && hasVoted && ownsVote && !editingVote && (
+        <section className="mt-6 px-4">
+          <div className="rounded-card border-2 border-ink bg-paper p-4">
+            <p className="text-small font-bold">Your vote is in.</p>
+            <p className="mt-1 text-micro text-ink/60">Only you can change or remove it from this device.</p>
+            <div className="mt-3 flex gap-2">
+              <Button type="button" tone="paper" size="sm" onClick={() => setEditingVote(true)}>
+                Edit my vote
+              </Button>
+              <Button
+                type="button"
+                tone="chili"
+                size="sm"
+                onClick={async () => {
+                  if (!ownsVote || !myParticipant) return
+                  await supabase.from('votes').delete().eq('participant_id', myParticipant.id)
+                  await supabase
+                    .from('participants')
+                    .update({ has_voted: false })
+                    .eq('id', myParticipant.id)
+                    .eq('device_id', getDeviceId())
+                  toast.success('Vote removed')
+                  load()
+                }}
+              >
+                <Trash2 size={16} strokeWidth={2.5} /> Delete my vote
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* VOTING PHASE */}
-      {plan.status === 'voting' && !hasVoted && (
+      {plan.status === 'voting' && (!hasVoted || (ownsVote && editingVote)) && (
         <section className="mt-6 space-y-4 px-4">
           <TicketCard tone="peacock" tilt={false}>
             <div className="space-y-4 p-4">
@@ -587,8 +625,13 @@ export default function PlanPage() {
               />
 
               <Button type="button" tone="saffron" size="lg" block loading={submitting} onClick={submitVote}>
-                {submitting ? 'Saving your vote...' : 'Submit Vote'}
+                {submitting ? 'Saving your vote...' : editingVote ? 'Update Vote' : 'Submit Vote'}
               </Button>
+              {editingVote && (
+                <Button type="button" tone="paper" block onClick={() => setEditingVote(false)}>
+                  Cancel
+                </Button>
+              )}
             </div>
           </TicketCard>
         </section>
