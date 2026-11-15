@@ -27,9 +27,10 @@ export function inviteText({ hostName, title, emoji = '🎒', code }) {
   )
 }
 
-/** Nudge message for friends who opened but did not vote. */
-export function nudgeText({ name, title, code }) {
-  return `Hey ${name}, your vote is needed for '${title}' 👀\nTakes 10 seconds: ${planUrl(code)}`
+/** Host nudge: remaining voters + time left. */
+export function nudgeText({ remaining, timeLeft, code }) {
+  const n = Number(remaining) || 0
+  return `${n} log ne abhi tak vote nahi kiya, ${timeLeft} bacha hai 👉 ${planUrl(code)}`
 }
 
 /**

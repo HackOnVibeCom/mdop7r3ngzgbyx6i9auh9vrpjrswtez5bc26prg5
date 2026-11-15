@@ -25,7 +25,7 @@ import { supabase, isSupabaseConfigured, callFunction } from '../lib/supabase'
 import { getDeviceId, getName, setName as saveNameToStorage } from '../lib/device'
 import { bestDate, bestPlace, bestBudget, votingStats } from '../lib/decide'
 import { aiPlan as callAIPlan, aiTasks as callAITasks } from '../lib/ai'
-import { downloadIcs, makeIcs } from '../lib/share'
+import { downloadIcs, makeIcs, nudgeText, whatsappLink } from '../lib/share'
 import { generateFallbackPlan } from '../lib/fallbackPlan'
 
 const STAGE_FOR_STATUS = { voting: 2, deciding: 3, decided: 4, locked: 5, live: 6, done: 7 }
@@ -680,6 +680,26 @@ export default function PlanPage() {
               </div>
             )}
 
+            {host && stats.didntVote.length > 0 && (
+              <div className="mt-4">
+                <Button
+                  as="a"
+                  href={whatsappLink(
+                    nudgeText({
+                      remaining: stats.didntVote.length,
+                      timeLeft: deadlineLabel(plan.deadline).replace(' left', ''),
+                      code: plan.code,
+                    })
+                  )}
+                  target="_blank"
+                  rel="noreferrer"
+                  tone="haldi"
+                  block
+                >
+                  Nudge ({stats.didntVote.length} pending)
+                </Button>
+              </div>
+            )}
             {canGenerate && (
               <div className="mt-4">
                 <Button type="button" tone="rani" block loading={generating} onClick={generateAIPlan}>

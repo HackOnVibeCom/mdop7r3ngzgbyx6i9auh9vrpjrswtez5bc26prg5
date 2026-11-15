@@ -47,6 +47,54 @@ const PLAN_TYPES = [
 
 const EMOJIS = ['🎒', '🍿', '🎂', '🎉', '🍽️', '🏔️', '🏖️', '🚂', '🛺', '☕', '🎸', '✨']
 
+const TEMPLATES = [
+  {
+    id: 'weekend',
+    label: 'Weekend trip',
+    type: 'trip',
+    emoji: '🏔️',
+    title: 'Weekend getaway',
+    days: 2,
+    budgetMin: 2000,
+    budgetMax: 6000,
+    places: ['Rishikesh', 'Mussoorie'],
+  },
+  {
+    id: 'movie',
+    label: 'Movie night',
+    type: 'movie',
+    emoji: '🍿',
+    title: 'Movie night',
+    days: 1,
+    budgetMin: 250,
+    budgetMax: 800,
+    places: ['PVR downtown', 'That indie screen'],
+    movies: ['The big new one', 'Comfort rewatch'],
+  },
+  {
+    id: 'birthday',
+    label: 'Birthday dinner',
+    type: 'birthday',
+    emoji: '🎂',
+    title: 'Birthday dinner',
+    days: 1,
+    budgetMin: 600,
+    budgetMax: 2000,
+    places: ['Rooftop dinner', 'That cafe we like'],
+  },
+  {
+    id: 'college',
+    label: 'College trip',
+    type: 'trip',
+    emoji: '🚂',
+    title: 'College trip',
+    days: 3,
+    budgetMin: 2500,
+    budgetMax: 8000,
+    places: ['Goa', 'Manali'],
+  },
+]
+
 const DEADLINES = [
   { value: 1, label: '1 hour' },
   { value: 6, label: '6 hours' },
@@ -116,6 +164,25 @@ export default function NewPlan() {
   }, [draft])
 
   // Switching plan type swaps the default emoji and keeps the budget band sane.
+  function applyTemplate(tpl) {
+    const nextMode = modeForType(tpl.type)
+    setDraft((d) => ({
+      ...d,
+      type: tpl.type,
+      emoji: tpl.emoji,
+      title: tpl.title,
+      days: tpl.days,
+      budgetMin: tpl.budgetMin,
+      budgetMax: tpl.budgetMax,
+      places: tpl.places.slice(0, 4),
+      movies: tpl.movies ? tpl.movies.slice(0, 4) : d.movies,
+      dates:
+        nextMode === 'short'
+          ? d.dates.map((date) => ({ ...date, slot: date.slot || 'evening' }))
+          : d.dates,
+    }))
+  }
+
   function pickType(value) {
     const preset = PLAN_TYPES.find((t) => t.value === value)
     const nextMode = modeForType(value)
@@ -261,6 +328,22 @@ export default function NewPlan() {
                 <div>
                   <p className="font-mono text-micro uppercase tracking-widest text-ink/50">step 1 / 3</p>
                   <h1 className="mt-1 text-h1 font-black">What's the plan?</h1>
+                </div>
+
+                <div>
+                  <span className="label-ink">Start from a template</span>
+                  <div className="flex flex-wrap gap-2">
+                    {TEMPLATES.map((tpl) => (
+                      <button
+                        key={tpl.id}
+                        type="button"
+                        onClick={() => applyTemplate(tpl)}
+                        className="inline-flex min-h-[44px] items-center rounded-[12px] border-2 border-ink bg-paper-dark px-3 py-2 text-small font-bold"
+                      >
+                        {tpl.emoji} {tpl.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div>

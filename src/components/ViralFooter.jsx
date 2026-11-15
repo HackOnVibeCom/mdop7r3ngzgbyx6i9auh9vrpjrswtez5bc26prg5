@@ -7,7 +7,7 @@ import { track } from '../lib/events'
  * `refCode` is the current plan's code, so new hosts are attributed to it.
  */
 export default function ViralFooter({ refCode = '', planId = null }) {
-  const to = refCode ? `/?ref=${refCode}` : '/'
+  const to = refCode ? `/?ref=${encodeURIComponent(refCode)}` : '/'
   return (
     <footer className="mt-10 border-t-2 border-ink bg-night px-4 py-8 text-paper">
       <div className="mx-auto flex w-full max-w-md flex-col items-center gap-3 text-center">
