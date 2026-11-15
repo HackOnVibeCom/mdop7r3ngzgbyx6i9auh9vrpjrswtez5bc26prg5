@@ -1,20 +1,44 @@
 import { createClient } from '@supabase/supabase-js'
 
-const url = import.meta.env.VITE_SUPABASE_URL || ''
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+// Strip stray surrounding quotes/whitespace that misconfigured env vars often carry
+// (e.g. a value accidentally stored as "https://..." with the quotes included).
+function cleanEnv(v) {
+  return String(v || '').trim().replace(/^['"]+|['"]+$/g, '').trim()
+}
 
-/** False when env vars are missing (fresh clone / first deploy). The UI must still render. */
-export const isSupabaseConfigured = Boolean(url && anonKey)
+function isValidHttpUrl(u) {
+  try {
+    const p = new URL(u)
+    return p.protocol === 'https:' || p.protocol === 'http:'
+  } catch {
+    return false
+  }
+}
+
+const url = cleanEnv(import.meta.env.VITE_SUPABASE_URL)
+const anonKey = cleanEnv(import.meta.env.VITE_SUPABASE_ANON_KEY)
+
+/** False when env vars are missing OR invalid. The UI must still render (never white-screen). */
+export const isSupabaseConfigured = isValidHttpUrl(url) && Boolean(anonKey)
 
 /** DEMO MODE: disabled - real Supabase is always used */
 export const DEMO_MODE = false
 
-export const supabase = isSupabaseConfigured
-  ? createClient(url, anonKey, {
+let client = null
+if (isSupabaseConfigured) {
+  try {
+    client = createClient(url, anonKey, {
       auth: { persistSession: false, autoRefreshToken: false },
       realtime: { params: { eventsPerSecond: 5 } },
     })
-  : null
+  } catch (err) {
+    // A bad URL/key must not crash the whole app at import time.
+    console.error('Supabase client init failed — check VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY:', err?.message || err)
+    client = null
+  }
+}
+
+export const supabase = client
 
 /** Base URL of the edge functions, e.g. https://xyz.supabase.co/functions/v1 */
 export const functionsBase = isSupabaseConfigured ? `${url}/functions/v1` : ''
