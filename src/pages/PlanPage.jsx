@@ -26,6 +26,7 @@ import { getDeviceId, getName, setName as saveNameToStorage } from '../lib/devic
 import { bestDate, bestPlace, bestBudget, votingStats } from '../lib/decide'
 import { aiPlan as callAIPlan, aiTasks as callAITasks } from '../lib/ai'
 import { downloadIcs, makeIcs } from '../lib/share'
+import { generateFallbackPlan } from '../lib/fallbackPlan'
 
 const STAGE_FOR_STATUS = { voting: 2, locked: 5, live: 6, done: 7 }
 
@@ -51,6 +52,7 @@ export default function PlanPage() {
 
   const [myParticipant, setMyParticipant] = useState(null)
   const hasVoted = myParticipant?.has_voted || false
+  const [autoDeciding, setAutoDeciding] = useState(false)
 
   const load = useCallback(async () => {
     if (!isSupabaseConfigured) {
@@ -112,6 +114,105 @@ export default function PlanPage() {
   useEffect(() => {
     load()
   }, [load])
+
+  // Auto-decide when deadline passes
+  useEffect(() => {
+    if (!state.plan || state.plan.status !== 'voting' || autoDeciding) return
+    
+    const deadline = new Date(state.plan.deadline)
+    const now = new Date()
+    
+    if (now >= deadline && participants.length >= 1) {
+      setAutoDeciding(true)
+      autoDecide()
+    }
+  }, [state.plan, participants, autoDeciding])
+
+  async function autoDecide() {
+    try {
+      const dateOptions = optionsOfKind(state.options, 'date')
+      const placeOptions = optionsOfKind(state.options, 'place')
+
+      if (!dateOptions.length) {
+        console.warn('Auto-decide skipped: no date options')
+        return
+      }
+
+      const winningDate = bestDate(dateOptions, votes)
+      const winningPlaceResult = bestPlace(placeOptions, votes)
+      const winningBudget = bestBudget(participants.map((p) => p.budget_vote))
+
+      const winningPlace = winningPlaceResult?.needsTieBreak
+        ? winningPlaceResult.options[0]
+        : winningPlaceResult
+
+      // Try to transition status atomically
+      const { data: updated, error: updateError } = await supabase
+        .from('plans')
+        .update({ status: 'deciding' })
+        .eq('id', state.plan.id)
+        .eq('status', 'voting')
+        .select()
+        .single()
+
+      if (updateError || !updated) {
+        console.log('Auto-decide already running or plan status changed')
+        return
+      }
+
+      // Call AI with 10s timeout
+      let plan
+      try {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), 10000)
+        
+        plan = await callAIPlan({
+          place: winningPlace?.label || 'destination',
+          date: winningDate.value,
+          days: state.plan.days || 1,
+          budget_per_person_inr: winningBudget || 3000,
+          people: participants.length,
+          type: state.plan.type,
+          comments: participants.map((p) => p.comment).filter(Boolean),
+        })
+        
+        clearTimeout(timeout)
+      } catch (aiError) {
+        console.warn('AI plan failed, using fallback:', aiError)
+        plan = generateFallbackPlan({
+          place: winningPlace?.label || 'destination',
+          date: winningDate.value,
+          days: state.plan.days || 1,
+          budget_per_person_inr: winningBudget || 3000,
+          type: state.plan.type,
+        })
+      }
+
+      // Save final decision
+      await supabase
+        .from('plans')
+        .update({
+          status: 'decided',
+          ai_plan: plan,
+          final_date_option: winningDate.id || null,
+          final_place_option: winningPlace?.id || null,
+          final_budget: winningBudget || null,
+        })
+        .eq('id', state.plan.id)
+
+      toast.success('Plan auto-generated based on votes!')
+    } catch (err) {
+      console.error('Auto-decide error:', err)
+      // Reset status back to voting if failed
+      await supabase
+        .from('plans')
+        .update({ status: 'voting' })
+        .eq('id', state.plan.id)
+        .eq('status', 'deciding')
+    } finally {
+      setAutoDeciding(false)
+    }
+  }
 
   // Realtime
   useEffect(() => {
