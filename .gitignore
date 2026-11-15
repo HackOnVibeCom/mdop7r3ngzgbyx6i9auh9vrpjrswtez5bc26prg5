@@ -3,17 +3,16 @@ dist
 dist-ssr
 
 # Local env files (never commit these)
+.env
 .env.local
+.env.production
+.env.secrets
 .env.development.local
 .env.test.local
+*.local
 
 # Keep template files
 !.env.example
-
-# Ignore all other .env files (including .env and .env.production with real keys)
-.env
-.env.production
-*.local
 
 .DS_Store
 npm-debug.log*

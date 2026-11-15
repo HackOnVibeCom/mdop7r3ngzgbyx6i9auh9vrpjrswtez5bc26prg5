@@ -648,6 +648,11 @@ export default function PlanPage() {
                 </Button>
               </div>
             )}
+            {!host && (
+              <p className="mt-3 text-micro text-ink/60">
+                Read-only for guests — only the host can generate and lock this plan.
+              </p>
+            )}
           </StatusCard>
         </section>
       )}

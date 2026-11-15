@@ -13,7 +13,7 @@ const TONES = {
 }
 
 const SIZES = {
-  sm: 'px-3 py-2 text-small min-h-[40px]',
+  sm: 'px-3 py-2 text-small min-h-[44px]',
   md: 'px-4 py-3 text-base min-h-[48px]',
   lg: 'px-5 py-4 text-h3 min-h-[56px]',
 }

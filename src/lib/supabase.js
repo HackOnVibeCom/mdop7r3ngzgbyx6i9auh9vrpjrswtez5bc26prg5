@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
-const url = import.meta.env.VITE_SUPABASE_URL || 'https://stxcnjusciiwqebvrboq.supabase.co'
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_s4g-l9zAgpdlglq73xp2Ww_leRRRayu'
+const url = import.meta.env.VITE_SUPABASE_URL || ''
+const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 
 /** False when env vars are missing (fresh clone / first deploy). The UI must still render. */
 export const isSupabaseConfigured = Boolean(url && anonKey)
