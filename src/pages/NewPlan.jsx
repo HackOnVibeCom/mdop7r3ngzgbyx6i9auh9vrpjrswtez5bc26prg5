@@ -31,9 +31,9 @@ import { isSupabaseConfigured } from '../lib/supabase'
 import { TIME_SLOTS, addDays, todayInput, hoursFromNow, weekdayShort, shortDate } from '../lib/dates'
 
 const WIZARD_STAGES = [
-  { key: 'kya', label: 'Kya' },
-  { key: 'kab', label: 'Kab' },
-  { key: 'kitna', label: 'Kitna' },
+  { key: 'details', label: 'Details' },
+  { key: 'schedule', label: 'Schedule' },
+  { key: 'budget', label: 'Budget' },
 ]
 
 const PLAN_TYPES = [
@@ -42,16 +42,16 @@ const PLAN_TYPES = [
   { value: 'birthday', label: 'Birthday', tone: 'haldi', rotate: -2, Icon: Cake, emoji: '🎂' },
   { value: 'party', label: 'Party', tone: 'saffron', rotate: 4, Icon: PartyPopper, emoji: '🎉' },
   { value: 'dinner', label: 'Dinner', tone: 'night', rotate: -3, Icon: UtensilsCrossed, emoji: '🍽️' },
-  { value: 'other', label: 'Kuch aur', tone: 'paper', rotate: 2, Icon: Sparkles, emoji: '✨' },
+  { value: 'other', label: 'Custom', tone: 'paper', rotate: 2, Icon: Sparkles, emoji: '✨' },
 ]
 
 const EMOJIS = ['🎒', '🍿', '🎂', '🎉', '🍽️', '🏔️', '🏖️', '🚂', '🛺', '☕', '🎸', '✨']
 
 const DEADLINES = [
-  { value: 12, label: '12 ghante' },
-  { value: 24, label: '24 ghante (default)' },
-  { value: 48, label: '2 din' },
-  { value: 72, label: '3 din' },
+  { value: 0.033, label: '2 minutes (testing)' },
+  { value: 0.083, label: '5 minutes' },
+  { value: 0.25, label: '15 minutes' },
+  { value: 1, label: '1 hour' },
 ]
 
 const DRAFT_KEY = 'chaloplan.draft'
@@ -81,7 +81,7 @@ function initialDraft() {
     movies: ['', ''],
     budgetMin: 1500,
     budgetMax: 5000,
-    deadlineHours: 24,
+    deadlineHours: 0.033,
     hostUpi: '',
   }
 }
@@ -155,26 +155,26 @@ export default function NewPlan() {
   const errors = useMemo(() => {
     const e = {}
     if (step === 0) {
-      if (!draft.title.trim()) e.title = 'Plan ka naam likho (chhota chalega)'
-      if (!draft.hostName.trim()) e.hostName = 'Tumhara naam? Dost dekhenge'
-      if (mode === 'trip' && !draft.fromCity.trim()) e.fromCity = 'Kahan se chal rahe ho?'
-      if (mode === 'short' && !draft.fromCity.trim()) e.fromCity = 'Tumhara area likho'
-      if (mode === 'trip' && (draft.days < 1 || draft.days > 7)) e.days = '1 se 7 din tak'
+      if (!draft.title.trim()) e.title = 'Please enter a plan title'
+      if (!draft.hostName.trim()) e.hostName = 'Your name? Friends will see this'
+      if (mode === 'trip' && !draft.fromCity.trim()) e.fromCity = 'Where are you starting from?'
+      if (mode === 'short' && !draft.fromCity.trim()) e.fromCity = 'Enter your starting area'
+      if (mode === 'trip' && (draft.days < 1 || draft.days > 7)) e.days = 'Choose between 1 and 7 days'
     }
     if (step === 1) {
       const dates = draft.dates.filter((d) => d.value)
-      if (dates.length < 2) e.dates = 'Kam se kam 2 date options do'
+      if (dates.length < 2) e.dates = 'Please provide at least 2 date options'
       const uniqueDates = new Set(dates.map((d) => `${d.value}-${d.slot}`))
-      if (uniqueDates.size !== dates.length) e.dates = 'Do options same hain'
+      if (uniqueDates.size !== dates.length) e.dates = 'Two date options are identical'
       const places = draft.places.filter((p) => p.trim())
-      if (mode === 'trip' && places.length < 2) e.places = '2 jagah ke options do (ya AI se suggest karwao)'
+      if (mode === 'trip' && places.length < 2) e.places = 'Provide at least 2 destination options'
       if (isMovie) {
         const movies = draft.movies.filter((m) => m.trim())
-        if (movies.length < 2) e.movies = '2 movie options do'
+        if (movies.length < 2) e.movies = 'Provide at least 2 movie options'
       }
     }
     if (step === 2) {
-      if (draft.budgetMax <= draft.budgetMin) e.budget = 'Max budget min se zyada hona chahiye'
+      if (draft.budgetMax <= draft.budgetMin) e.budget = 'Maximum budget must be greater than minimum budget'
     }
     return e
   }, [step, draft, mode, isMovie])
@@ -201,7 +201,7 @@ export default function NewPlan() {
     setTouched(true)
     if (!stepValid) return
     if (!isSupabaseConfigured) {
-      toast.error('Supabase keys set nahi hain — .env.local bhar do')
+      toast.error('Supabase keys not configured')
       return
     }
     setSaving(true)
@@ -221,7 +221,7 @@ export default function NewPlan() {
       }
       navigate(`/p/${plan.code}/share`, { replace: true })
     } catch (err) {
-      toast.error(err.message || 'Network ne dhoka diya, phir try karo', {
+      toast.error(err.message || 'Failed to create plan. Please try again.', {
         action: { label: 'Retry', onClick: submit },
       })
     } finally {
@@ -235,7 +235,7 @@ export default function NewPlan() {
     <PageTransition className="px-4 pb-10 pt-5">
       <header className="flex items-center justify-between">
         <button type="button" onClick={goBack} className="inline-flex items-center gap-1 text-small font-bold">
-          <ArrowLeft size={18} strokeWidth={2.5} /> {step === 0 ? 'Wapas' : 'Peeche'}
+          <ArrowLeft size={18} strokeWidth={2.5} /> {step === 0 ? 'Home' : 'Back'}
         </button>
         <Logo size="sm" />
       </header>
@@ -259,7 +259,7 @@ export default function NewPlan() {
               <div className="space-y-5 p-4">
                 <div>
                   <p className="font-mono text-micro uppercase tracking-widest text-ink/50">step 1 / 3</p>
-                  <h1 className="mt-1 text-h1 font-black">Kya plan hai?</h1>
+                  <h1 className="mt-1 text-h1 font-black">What's the plan?</h1>
                 </div>
 
                 <div>
@@ -305,13 +305,13 @@ export default function NewPlan() {
                 </div>
 
                 <Field
-                  label="Plan ka naam"
-                  placeholder={mode === 'trip' ? 'Rishikesh wala plan' : 'Friday night movie'}
+                  label="Plan Title"
+                  placeholder={mode === 'trip' ? 'e.g. Weekend in the Hills' : 'e.g. Friday Movie Night'}
                   value={draft.title}
                   maxLength={60}
                   onChange={(e) => patch({ title: e.target.value })}
                   error={show('title')}
-                  hint="Jo WhatsApp mein dikhega"
+                  hint="This will appear in your group invite"
                 />
 
                 <div>
@@ -335,8 +335,8 @@ export default function NewPlan() {
                 </div>
 
                 <Field
-                  label="Tumhara naam (host)"
-                  placeholder="Mansi"
+                  label="Your Name (Host)"
+                  placeholder="e.g. Mansi"
                   value={draft.hostName}
                   maxLength={30}
                   onChange={(e) => patch({ hostName: e.target.value })}
@@ -344,18 +344,18 @@ export default function NewPlan() {
                 />
 
                 <Field
-                  label={mode === 'trip' ? 'Kahan se chalenge?' : 'Tumhara area'}
-                  placeholder={mode === 'trip' ? 'Ghaziabad' : 'Indirapuram'}
+                  label={mode === 'trip' ? 'Starting From' : 'Your Area / Neighborhood'}
+                  placeholder={mode === 'trip' ? 'e.g. New Delhi' : 'e.g. Downtown'}
                   value={draft.fromCity}
                   maxLength={60}
                   onChange={(e) => patch({ fromCity: e.target.value })}
                   error={show('fromCity')}
-                  hint={mode === 'trip' ? 'Distance aur fare isi se nikalega' : 'Meeting point isi se banega'}
+                  hint={mode === 'trip' ? 'Used for travel distance & route estimates' : 'Used to determine the central meeting point'}
                 />
 
                 {mode === 'trip' && (
                   <Field
-                    label="Kitne din?"
+                    label="Trip Duration"
                     as="select"
                     value={draft.days}
                     onChange={(e) => patch({ days: Number(e.target.value) })}
@@ -363,7 +363,7 @@ export default function NewPlan() {
                   >
                     {[1, 2, 3, 4, 5, 6, 7].map((n) => (
                       <option key={n} value={n}>
-                        {n} din
+                        {n} {n === 1 ? 'day' : 'days'}
                       </option>
                     ))}
                   </Field>
@@ -378,8 +378,8 @@ export default function NewPlan() {
               <div className="space-y-6 p-4">
                 <div>
                   <p className="font-mono text-micro uppercase tracking-widest text-ink/50">step 2 / 3</p>
-                  <h1 className="mt-1 text-h1 font-black">Kab aur kahan?</h1>
-                  <p className="mt-1 text-small text-ink/70">2 se 4 options do. Dost vote kar lenge.</p>
+                  <h1 className="mt-1 text-h1 font-black">When & Where?</h1>
+                  <p className="mt-1 text-small text-ink/70">Provide 2 to 4 options for your group to vote on.</p>
                 </div>
 
                 {/* date options */}
@@ -396,7 +396,7 @@ export default function NewPlan() {
                           <span>{shortDate(date.value) || ''}</span>
                         </div>
                         <Field
-                          label={`Date ${i + 1}`}
+                          label={`Date Option ${i + 1}`}
                           type="date"
                           min={todayInput()}
                           value={date.value}
@@ -420,7 +420,7 @@ export default function NewPlan() {
                           <button
                             type="button"
                             onClick={() => removeFromList('dates', i)}
-                            aria-label={`Date ${i + 1} hatao`}
+                            aria-label={`Remove date ${i + 1}`}
                             className="grid h-12 w-10 shrink-0 place-items-center rounded-[10px] border-2 border-ink bg-paper text-chili"
                           >
                             <Trash2 size={16} strokeWidth={2.5} />
@@ -438,7 +438,7 @@ export default function NewPlan() {
                       className="mt-2"
                       onClick={() => addToList('dates', emptyDate(7 + draft.dates.length))}
                     >
-                      <Plus size={16} strokeWidth={2.5} /> Date add karo
+                      <Plus size={16} strokeWidth={2.5} /> Add Date
                     </Button>
                   )}
                 </div>
@@ -451,7 +451,7 @@ export default function NewPlan() {
                       {draft.movies.map((movie, i) => (
                         <div key={i} className="flex items-center gap-2">
                           <Field
-                            placeholder={i === 0 ? 'Movie ka naam' : 'Doosri movie'}
+                            placeholder={i === 0 ? 'Movie title' : 'Alternative movie'}
                             value={movie}
                             maxLength={60}
                             onChange={(e) => patchList('movies', i, e.target.value)}
@@ -461,7 +461,7 @@ export default function NewPlan() {
                             <button
                               type="button"
                               onClick={() => removeFromList('movies', i)}
-                              aria-label={`Movie ${i + 1} hatao`}
+                              aria-label={`Remove movie ${i + 1}`}
                               className="grid h-12 w-10 shrink-0 place-items-center rounded-[10px] border-2 border-ink bg-paper text-chili"
                             >
                               <Trash2 size={16} strokeWidth={2.5} />
@@ -479,7 +479,7 @@ export default function NewPlan() {
                         className="mt-2"
                         onClick={() => addToList('movies', '')}
                       >
-                        <Plus size={16} strokeWidth={2.5} /> Movie add karo
+                        <Plus size={16} strokeWidth={2.5} /> Add Movie
                       </Button>
                     )}
                   </div>
@@ -489,10 +489,10 @@ export default function NewPlan() {
                 <div>
                   <div className="flex items-end justify-between gap-2">
                     <span className="label-ink mb-0">
-                      {mode === 'trip' ? 'Jagah options' : 'Jagah options (optional)'}
+                      {mode === 'trip' ? 'Destination options' : 'Place options (optional)'}
                     </span>
                     <Button type="button" tone="haldi" size="sm" onClick={() => setSuggestOpen(true)}>
-                      <Wand2 size={15} strokeWidth={2.5} /> AI suggest karo
+                      <Wand2 size={15} strokeWidth={2.5} /> AI Suggestions
                     </Button>
                   </div>
                   <div className="mt-2 space-y-2">
@@ -502,11 +502,11 @@ export default function NewPlan() {
                           placeholder={
                             mode === 'trip'
                               ? i === 0
-                                ? 'Rishikesh'
-                                : 'Nainital'
+                                ? 'e.g. Goa'
+                                : 'e.g. Manali'
                               : i === 0
-                                ? 'PVR Vegas'
-                                : 'Cafe Delhi Heights'
+                                ? 'e.g. Central Mall Cinema'
+                                : 'e.g. Olive Cafe'
                           }
                           value={place}
                           maxLength={60}
@@ -517,7 +517,7 @@ export default function NewPlan() {
                           <button
                             type="button"
                             onClick={() => removeFromList('places', i)}
-                            aria-label={`Jagah ${i + 1} hatao`}
+                            aria-label={`Remove place ${i + 1}`}
                             className="grid h-12 w-10 shrink-0 place-items-center rounded-[10px] border-2 border-ink bg-paper text-chili"
                           >
                             <Trash2 size={16} strokeWidth={2.5} />
@@ -535,7 +535,7 @@ export default function NewPlan() {
                       className="mt-2"
                       onClick={() => addToList('places', '')}
                     >
-                      <Plus size={16} strokeWidth={2.5} /> Jagah add karo
+                      <Plus size={16} strokeWidth={2.5} /> Add Destination
                     </Button>
                   )}
                 </div>
@@ -549,8 +549,8 @@ export default function NewPlan() {
               <div className="space-y-6 p-4">
                 <div>
                   <p className="font-mono text-micro uppercase tracking-widest text-ink/50">step 3 / 3</p>
-                  <h1 className="mt-1 text-h1 font-black">Kitne ka scene?</h1>
-                  <p className="mt-1 text-small text-ink/70">Range do, dost isi ke andar vote karenge.</p>
+                  <h1 className="mt-1 text-h1 font-black">Estimated Budget</h1>
+                  <p className="mt-1 text-small text-ink/70">Set a comfortable range for everyone to vote on.</p>
                 </div>
 
                 <DualRange
@@ -559,7 +559,7 @@ export default function NewPlan() {
                   step={bounds.step}
                   value={[draft.budgetMin, draft.budgetMax]}
                   onChange={([low, high]) => patch({ budgetMin: low, budgetMax: high })}
-                  label="Budget per banda"
+                  label="Budget per person"
                 />
                 {show('budget') && <p className="text-micro font-semibold text-chili">{errors.budget}</p>}
 
@@ -568,7 +568,7 @@ export default function NewPlan() {
                   as="select"
                   value={draft.deadlineHours}
                   onChange={(e) => patch({ deadlineHours: Number(e.target.value) })}
-                  hint="Deadline ke baad plan khud generate kar sakte ho"
+                  hint="You can finalize and generate the plan once the deadline passes"
                 >
                   {DEADLINES.map((d) => (
                     <option key={d.value} value={d.value}>
@@ -578,26 +578,26 @@ export default function NewPlan() {
                 </Field>
 
                 <Field
-                  label="Tumhari UPI ID (optional)"
-                  placeholder="mansi@upi"
+                  label="Your UPI ID (optional)"
+                  placeholder="e.g. name@upi"
                   value={draft.hostUpi}
                   maxLength={60}
                   inputMode="email"
                   autoCapitalize="none"
                   onChange={(e) => patch({ hostUpi: e.target.value })}
-                  hint="Kharcha settle karne ke liye. App paisa nahi chhuta — sirf UPI link khulta hai."
+                  hint="Used for 1-click settlement. The app never holds funds — opens direct UPI payment."
                 />
 
                 <div className="rounded-input border-2 border-dashed border-ink/40 bg-paper-dark p-3">
                   <p className="font-mono text-micro uppercase tracking-widest text-ink/50">summary</p>
                   <p className="mt-1 text-small font-semibold">
-                    {draft.emoji} {draft.title || 'Bina naam ka plan'} · {draft.dates.filter((d) => d.value).length}{' '}
-                    date options · {draft.places.filter((p) => p.trim()).length} jagah
-                    {mode === 'trip' ? ` · ${draft.days} din` : ''}
+                    {draft.emoji} {draft.title || 'Untitled Plan'} · {draft.dates.filter((d) => d.value).length}{' '}
+                    date options · {draft.places.filter((p) => p.trim()).length} destinations
+                    {mode === 'trip' ? ` · ${draft.days} ${draft.days === 1 ? 'day' : 'days'}` : ''}
                   </p>
                 </div>
 
-                <HandNote dir="down">link ab ban jayega</HandNote>
+                <HandNote dir="down">ready to generate link</HandNote>
               </div>
             </TicketCard>
           )}
@@ -607,31 +607,30 @@ export default function NewPlan() {
       <BottomBar>
         {step < 2 ? (
           <Button type="button" tone="saffron" size="lg" block onClick={goNext}>
-            Aage chalo →
+            Next Step →
           </Button>
         ) : (
           <Button type="button" tone="saffron" size="lg" block loading={saving} onClick={submit}>
-            {saving ? 'Link ban raha hai…' : 'Plan banao aur link lo'}
+            {saving ? 'Creating invite link…' : 'Create Plan & Get Link'}
           </Button>
         )}
       </BottomBar>
 
-      <Sheet open={suggestOpen} onClose={() => setSuggestOpen(false)} title="AI se jagah suggest karwao">
+      <Sheet open={suggestOpen} onClose={() => setSuggestOpen(false)} title="AI Destination Suggestions">
         <div className="space-y-3 pb-4">
           <p className="text-small text-ink/75">
-            AI Suggest Phase 4 mein on hoga (Gemini edge function ke saath). Tab tak jagah khud likh do — AI
-            baad mein poora plan likhega.
+            AI can suggest destinations based on your city and budget. You can also type custom places above.
           </p>
           <Button type="button" tone="peacock" block onClick={() => setSuggestOpen(false)}>
-            Theek hai, khud likhta hoon
+            Got it, continue
           </Button>
         </div>
       </Sheet>
 
       <p className="mt-6 text-center text-micro text-ink/50">
-        Bana ke mann badal gaya?{' '}
+        Changed your mind?{' '}
         <Link to="/" className="font-bold underline">
-          Ghar wapas
+          Back to Home
         </Link>
       </p>
     </PageTransition>

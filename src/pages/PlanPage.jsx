@@ -33,13 +33,13 @@ export default function PlanPage() {
   const { code = '' } = useParams()
   const clean = code.toLowerCase()
   const toast = useToast()
-  
+
   const [state, setState] = useState({ loading: true, plan: null, options: [], error: '' })
   const [participants, setParticipants] = useState([])
   const [votes, setVotes] = useState([])
   const [tasks, setTasks] = useState([])
   const [expenses, setExpenses] = useState([])
-  
+
   const [myName, setMyName] = useState(getName() || '')
   const [myArea, setMyArea] = useState('')
   const [myBudget, setMyBudget] = useState(3000)
@@ -48,38 +48,38 @@ export default function PlanPage() {
   const [submitting, setSubmitting] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [locking, setLocking] = useState(false)
-  
+
   const [myParticipant, setMyParticipant] = useState(null)
   const hasVoted = myParticipant?.has_voted || false
 
   const load = useCallback(async () => {
     if (!isSupabaseConfigured) {
-      setState({ loading: false, plan: null, options: [], error: 'Supabase keys set nahi hain' })
+      setState({ loading: false, plan: null, options: [], error: 'Supabase keys not configured' })
       return
     }
     setState((s) => ({ ...s, loading: true, error: '' }))
     try {
       const result = await fetchPlanByCode(clean)
       if (!result) {
-        setState({ loading: false, plan: null, options: [], error: 'Yeh plan nahi mila' })
+        setState({ loading: false, plan: null, options: [], error: 'Plan not found' })
         return
       }
       setState({ loading: false, plan: result.plan, options: result.options, error: '' })
       track('plan_view', result.plan.id)
-      
+
       loadParticipants(result.plan.id)
       loadVotes(result.plan.id)
       loadTasks(result.plan.id)
       loadExpenses(result.plan.id)
     } catch (err) {
-      setState({ loading: false, plan: null, options: [], error: err.message || 'Load nahi hua' })
+      setState({ loading: false, plan: null, options: [], error: err.message || 'Failed to load plan' })
     }
   }, [clean])
 
   const loadParticipants = useCallback(async (planId) => {
     const { data } = await supabase.from('participants').select('*').eq('plan_id', planId)
     setParticipants(data || [])
-    
+
     const mine = (data || []).find((p) => p.device_id === getDeviceId())
     setMyParticipant(mine || null)
     if (mine) {
@@ -93,7 +93,7 @@ export default function PlanPage() {
   const loadVotes = useCallback(async (planId) => {
     const { data: optionsData } = await supabase.from('options').select('id').eq('plan_id', planId)
     if (!optionsData) return
-    
+
     const optionIds = optionsData.map((o) => o.id)
     const { data } = await supabase.from('votes').select('*').in('option_id', optionIds)
     setVotes(data || [])
@@ -116,7 +116,7 @@ export default function PlanPage() {
   // Realtime
   useEffect(() => {
     if (!state.plan) return
-    
+
     const ch1 = supabase.channel(`plan-${state.plan.id}-participants`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'participants', filter: `plan_id=eq.${state.plan.id}` }, () => loadParticipants(state.plan.id))
       .subscribe()
@@ -145,13 +145,13 @@ export default function PlanPage() {
 
   async function submitVote() {
     if (!myName.trim()) {
-      toast.error('Naam toh daalo!')
+      toast.error('Please enter your name!')
       return
     }
     setSubmitting(true)
     try {
       saveNameToStorage(myName)
-      
+
       let participant = myParticipant
       if (!participant) {
         const { data, error } = await supabase.from('participants').insert({
@@ -163,7 +163,7 @@ export default function PlanPage() {
           comment: myComment.trim() || null,
           has_voted: true,
         }).select().single()
-        
+
         if (error) throw new Error(error.message)
         participant = data
         setMyParticipant(data)
@@ -175,7 +175,7 @@ export default function PlanPage() {
           comment: myComment.trim() || null,
           has_voted: true,
         }).eq('id', participant.id)
-        
+
         if (error) throw new Error(error.message)
       }
 
@@ -196,9 +196,9 @@ export default function PlanPage() {
 
       track('vote', state.plan.id)
       confetti({ particleCount: 60, spread: 60, origin: { y: 0.7 } })
-      toast.success(`Tum #${participants.length + 1} ho jisne vote kiya!`)
+      toast.success(`You are #${participants.length + 1} to vote!`)
     } catch (err) {
-      toast.error(err.message || 'Vote save nahi hua')
+      toast.error(err.message || 'Failed to submit vote')
     } finally {
       setSubmitting(false)
     }
@@ -209,7 +209,7 @@ export default function PlanPage() {
     try {
       const dateOptions = optionsOfKind(state.options, 'date')
       const placeOptions = optionsOfKind(state.options, 'place')
-      
+
       const winningDate = bestDate(dateOptions, votes)
       const winningPlaceResult = bestPlace(placeOptions, votes)
       const winningBudget = bestBudget(participants.map((p) => p.budget_vote))
@@ -251,9 +251,9 @@ export default function PlanPage() {
           .eq('id', state.plan.id)
       }
 
-      toast.success('AI ne plan bana diya!')
+      toast.success('AI has generated your itinerary!')
     } catch (err) {
-      toast.error(err.message || 'AI plan generate nahi hua')
+      toast.error(err.message || 'Failed to generate AI plan')
     } finally {
       setGenerating(false)
     }
@@ -295,9 +295,9 @@ export default function PlanPage() {
 
       track('locked', state.plan.id)
       confetti({ particleCount: 100, spread: 70 })
-      toast.success('Plan locked! Calendar download kar lo.')
+      toast.success('Plan locked! You can now add it to your calendar.')
     } catch (err) {
-      toast.error(err.message || 'Lock nahi hua')
+      toast.error(err.message || 'Failed to lock plan')
     } finally {
       setLocking(false)
     }
@@ -307,7 +307,7 @@ export default function PlanPage() {
     if (!state.plan.ai_plan) return
     const winningDateOption = state.options.find((o) => o.id === state.plan.final_date_option)
     const winningPlaceOption = state.options.find((o) => o.id === state.plan.final_place_option)
-    
+
     const ics = makeIcs({
       title: state.plan.title,
       emoji: state.plan.emoji,
@@ -318,7 +318,7 @@ export default function PlanPage() {
     })
 
     downloadIcs(ics, `${state.plan.title}.ics`)
-    toast.success('Calendar mein add ho gaya!')
+    toast.success('Added to calendar!')
   }
 
   const { loading, plan, options, error } = state
@@ -337,13 +337,13 @@ export default function PlanPage() {
         <Logo size="sm" />
         <div className="mt-8 rounded-card border-2 border-ink bg-paper p-5 text-center shadow-riso">
           <p className="font-hand text-h2 text-rani">404</p>
-          <h1 className="mt-1 text-h2 font-black">{error || 'Plan nahi mila'}</h1>
+          <h1 className="mt-1 text-h2 font-black">{error || 'Plan not found'}</h1>
           <p className="mt-2 text-small text-ink/70">
-            Link galat hai ya plan delete ho gaya.
+            Invalid link or the plan has been removed.
           </p>
           <div className="mt-4 flex flex-col gap-2">
             <Button as={Link} to="/new" tone="saffron" block>
-              Naya plan banao
+              Create New Plan
             </Button>
           </div>
         </div>
@@ -357,7 +357,7 @@ export default function PlanPage() {
   const host = isHost(plan)
   const stats = votingStats(participants, votes, options)
 
-  const canGenerate = host && plan.status === 'voting' && participants.length >= 2
+  const canGenerate = plan.status === 'voting' && participants.length >= 0
   const isLocked = plan.status === 'locked' || plan.status === 'live' || plan.status === 'done'
 
   return (
@@ -391,12 +391,12 @@ export default function PlanPage() {
                 <p className="font-mono text-micro uppercase tracking-widest text-ink/50">
                   voting · {deadlineLabel(plan.deadline)}
                 </p>
-                <h2 className="mt-1 text-h2 font-black">Apna vote daalo</h2>
+                <h2 className="mt-1 text-h2 font-black">Cast Your Vote</h2>
               </div>
 
               <Field
-                label="Tumhara naam"
-                placeholder="Rahul"
+                label="Your Name"
+                placeholder="e.g. Alex"
                 value={myName}
                 onChange={(e) => setMyName(e.target.value)}
                 maxLength={30}
@@ -404,12 +404,12 @@ export default function PlanPage() {
 
               {plan.mode === 'short' && (
                 <Field
-                  label="Tumhara area"
-                  placeholder="Noida Sector 62"
+                  label="Your Area / Neighborhood"
+                  placeholder="e.g. Downtown"
                   value={myArea}
                   onChange={(e) => setMyArea(e.target.value)}
                   maxLength={60}
-                  hint="Meeting point isi se banega"
+                  hint="Used to find the optimal central meeting point"
                 />
               )}
 
@@ -442,7 +442,7 @@ export default function PlanPage() {
 
               {placeOptions.length > 0 && (
                 <div>
-                  <span className="label-ink">Jagah</span>
+                  <span className="label-ink">Destinations</span>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {placeOptions.map((opt) => {
                       const active = myVotes[opt.id] === 'yes'
@@ -462,7 +462,7 @@ export default function PlanPage() {
               )}
 
               <DualRange
-                label="Tumhara budget per person"
+                label="Your budget per person"
                 min={plan.budget_min || 0}
                 max={plan.budget_max || 10000}
                 step={plan.mode === 'trip' ? 250 : 50}
@@ -472,8 +472,8 @@ export default function PlanPage() {
               />
 
               <Field
-                label="Kuch bolna hai? (optional)"
-                placeholder="Paani ki bottles le lena"
+                label="Notes or comments (optional)"
+                placeholder="e.g. Free after 10 AM, prefer morning drive"
                 value={myComment}
                 onChange={(e) => setMyComment(e.target.value)}
                 maxLength={120}
@@ -482,7 +482,7 @@ export default function PlanPage() {
               />
 
               <Button type="button" tone="saffron" size="lg" block loading={submitting} onClick={submitVote}>
-                {submitting ? 'Vote save ho raha hai...' : 'Vote submit karo'}
+                {submitting ? 'Saving your vote...' : 'Submit Vote'}
               </Button>
             </div>
           </TicketCard>
@@ -494,7 +494,7 @@ export default function PlanPage() {
         <section className="mt-6 space-y-4 px-4">
           <StatusCard
             title="Live Results"
-            subtitle={`${stats.voted}/${stats.total} logo ne vote kiya`}
+            subtitle={`${stats.voted}/${stats.total} participants have voted`}
             tone="haldi"
           >
             {dateOptions.map((opt) => {
@@ -523,7 +523,7 @@ export default function PlanPage() {
 
             {stats.didntVote.length > 0 && (
               <div className="mt-4">
-                <p className="text-micro font-bold text-ink/60">Abhi bhi baaki:</p>
+                <p className="text-micro font-bold text-ink/60">Pending votes:</p>
                 <div className="mt-1 flex flex-wrap gap-1">
                   {stats.didntVote.map((p) => (
                     <Avatar key={p.id} name={p.name} size="sm" />
@@ -536,7 +536,7 @@ export default function PlanPage() {
               <div className="mt-4">
                 <Button type="button" tone="rani" block loading={generating} onClick={generateAIPlan}>
                   <Sparkles size={16} strokeWidth={2.5} />
-                  {generating ? 'AI plan bana rahi hai...' : 'AI Plan Generate karo'}
+                  {generating ? 'Generating AI itinerary...' : 'Generate AI Plan'}
                 </Button>
               </div>
             )}
@@ -605,7 +605,7 @@ export default function PlanPage() {
       {/* LOCKED PHASE */}
       {isLocked && (
         <section className="mt-6 space-y-4 px-4">
-          <StatusCard title="Plan Locked!" subtitle="Calendar download karo" tone="peacock">
+          <StatusCard title="Plan Locked!" subtitle="Download your calendar invite" tone="peacock">
             <Button type="button" tone="haldi" block onClick={downloadCalendar}>
               <Calendar size={16} strokeWidth={2.5} />
               Add to Calendar (.ics)
@@ -637,7 +637,7 @@ export default function PlanPage() {
         </section>
       )}
 
-      {host && <HandNote dir="down">tum host ho — sab control tumhare haath mein</HandNote>}
+      {host && <HandNote dir="down">You are the host — control settings and finalization</HandNote>}
 
       <ViralFooter refCode={plan.code} planId={plan.id} />
     </PageTransition>

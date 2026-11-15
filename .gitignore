@@ -7,9 +7,12 @@ dist-ssr
 .env.development.local
 .env.test.local
 
+# Keep template files
 !.env.example
-!.env
-!.env.production
+
+# Ignore all other .env files (including .env and .env.production with real keys)
+.env
+.env.production
 *.local
 
 .DS_Store

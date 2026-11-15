@@ -35,6 +35,7 @@ export function ToastProvider({ children }) {
       toast,
       dismiss,
       ok: (m, o) => toast(m, { ...o, tone: 'ok' }),
+      success: (m, o) => toast(m, { ...o, tone: 'ok' }),
       error: (m, o) => toast(m, { ...o, tone: 'error' }),
     }),
     [toast, dismiss]
@@ -77,7 +78,7 @@ export function ToastProvider({ children }) {
               ) : (
                 <button
                   type="button"
-                  aria-label="Band karo"
+                  aria-label="Dismiss"
                   onClick={() => dismiss(t.id)}
                   className="shrink-0 px-1 text-base leading-none opacity-80"
                 >
@@ -96,7 +97,7 @@ export function useToast() {
   const ctx = useContext(ToastContext)
   if (!ctx) {
     // Keeps components usable in isolation (e.g. a future storybook) without crashing.
-    return { toast: () => {}, dismiss: () => {}, ok: () => {}, error: () => {} }
+    return { toast: () => {}, dismiss: () => {}, ok: () => {}, success: () => {}, error: () => {} }
   }
   return ctx
 }
